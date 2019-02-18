@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 kctrl_svp_ip = '127.0.0.1'
-ktrl_svp_port = 14002  # or 4001 ? Both ports do not seem to immediately apply the received S01
+ktrl_svp_port = 14002  # 4001 seems to still be able to receive S01, but they are not applied
 
 # a short profile
 depths = [0.00, 2.60, 24.60, 81.80, 203.60, 500.00, 1000.00, 2000.00, 4000.00, 12000.00]
