@@ -1,6 +1,6 @@
 import logging
 from PySide2 import QtCore, QtGui, QtWidgets
-from hyo2.kng.top.top4sis4.app import app_info  #, controlpanel
+from hyo2.kng.top.top4sis4.app import app_info, controlpanel
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,10 @@ class MainWin(QtWidgets.QMainWindow):
         # set icons
         self.setWindowIcon(QtGui.QIcon(app_info.app_icon_path))
 
-        # self.panel = controlpanel.ControlPanel()
-        # self.setCentralWidget(self.panel)
+        self.setMinimumSize(400, 600)
+
+        self.panel = controlpanel.ControlPanel()
+        self.setCentralWidget(self.panel)
 
     def _do_you_really_want(self, title="Quit", text="quit"):
         """helper function that show to the user a message windows asking to confirm an action"""
@@ -44,7 +46,7 @@ class MainWin(QtWidgets.QMainWindow):
         if reply == QtWidgets.QMessageBox.Yes:
 
             event.accept()
-            # self.panel.stop_emulation()
+            self.panel.stop_listening()
             super().closeEvent(event)
 
         else:

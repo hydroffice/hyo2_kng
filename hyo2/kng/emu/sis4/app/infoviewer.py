@@ -10,7 +10,7 @@ class InfoViewerDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
-        self.setWindowTitle("SIS I/O Info")
+        self.setWindowTitle("SIS4 I/O Info")
         self.setContentsMargins(0, 0, 0, 0)
 
         vbox = QtWidgets.QVBoxLayout()
