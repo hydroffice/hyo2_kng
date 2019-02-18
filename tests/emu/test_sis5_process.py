@@ -2,7 +2,7 @@ import os
 import unittest
 from multiprocessing import Pipe, freeze_support
 from hyo2.abc.lib.testing import Testing
-from hyo2.kng.emu.sis5.lib.sis5_process import Sis5Process
+from hyo2.kng.emu.kctrl.lib.kctrl_process import KCtrlProcess
 
 
 class TestSis5Process(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestSis5Process(unittest.TestCase):
         freeze_support()
 
         parent_conn, child_conn = Pipe()
-        p = Sis5Process(conn=child_conn, ip_out=self.ip_out, port_out=self.port_out)
+        p = KCtrlProcess(conn=child_conn, ip_out=self.ip_out, port_out=self.port_out)
 
         p.start()
         self.assertTrue(p.is_alive())
@@ -34,7 +34,7 @@ class TestSis5Process(unittest.TestCase):
         freeze_support()
 
         parent_conn, child_conn = Pipe()
-        p = Sis5Process(conn=child_conn, ip_out=self.ip_out, port_out=self.port_out)
+        p = KCtrlProcess(conn=child_conn, ip_out=self.ip_out, port_out=self.port_out)
 
         p.set_files(self.test_files)
 
