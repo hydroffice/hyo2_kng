@@ -48,6 +48,7 @@ install:
   - conda list --show-channel-urls
 
 script:
+  - python data/download_data.py
   - coverage run --source hyo2 setup.py test
 
 after_success:

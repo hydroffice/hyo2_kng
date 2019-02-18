@@ -57,6 +57,7 @@ build_script:
 
 test: off
 test_script:
+  - python data/download_data.py
   - coverage run --source hyo2 setup.py test
   - coverage report -m
   - coveralls
