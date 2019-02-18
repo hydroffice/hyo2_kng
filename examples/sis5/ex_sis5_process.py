@@ -1,19 +1,17 @@
 import logging
+import os
 import time
 from multiprocessing import Pipe, freeze_support
-
-from hyo2.kng.emu.sis5.lib.process import SisProcess
+from hyo2.abc.lib.testing import Testing
+from hyo2.kng.emu.sis5.lib.process import Sis5Process
 
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-test_files = [
-    r"C:\Users\gmasetti\Google Drive\Mike\data\all\sally_ride\0000_20170104_185019_SallyRide.all",
-    r"C:\Users\gmasetti\Google Drive\Mike\data\kmall\5deeps\0008_20181215_033617_PressureDrop.kmall",
-    r"C:\Users\gmasetti\Google Drive\Mike\data\kmall\5deeps\0009_20181215_040502_PressureDrop.kmall",
-    r"C:\Users\gmasetti\Google Drive\Mike\data\kmall\5deeps\0010_20181215_042649_PressureDrop.kmall",
-]
+data_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+testing = Testing(root_folder=data_folder)
+test_files = testing.download_test_files(ext=".kmall")
 
 if __name__ == '__main__':
     freeze_support()
@@ -23,7 +21,7 @@ if __name__ == '__main__':
 
     logger.debug("starting SIS5 process ...")
     parent_conn, child_conn = Pipe()
-    p = SisProcess(conn=child_conn, ip_out=ip_out, port_out=port_out)
+    p = Sis5Process(conn=child_conn, ip_out=ip_out, port_out=port_out)
     p.set_files(test_files)
     p.start()
 

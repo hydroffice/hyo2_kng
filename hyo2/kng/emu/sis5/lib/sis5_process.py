@@ -9,8 +9,8 @@ from hyo2.kng.emu.sis5.lib.threads.replay_thread import ReplayThread
 logger = logging.getLogger(__name__)
 
 
-class SisProcess(Process):
-    """SIS simulator"""
+class Sis5Process(Process):
+    """SIS5 process simulator"""
 
     def __init__(self, conn, replay_timing=1.0,
                  port_in=6020, port_out=26103, ip_out="224.1.20.40",
