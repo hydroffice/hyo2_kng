@@ -6,13 +6,13 @@ import threading
 import time
 from threading import Lock
 from typing import Optional
-from hyo2.kng.emu.sis5.lib.kng_kmall import KngKmall
+from hyo2.kng.emu.kctrl.lib.kng_kmall import KngKmall
 
 logger = logging.getLogger(__name__)
 
 
 class ReplayThread(threading.Thread):
-    """Mimic the interaction with a real SIS
+    """Mimic the interaction with a real KCtrl
 
     To check who is listening on port 4001: netstat -a -n -o | find "4001"
     then to know the process name: tasklist /fi "pid eq 2216"

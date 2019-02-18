@@ -3,7 +3,7 @@ import os
 import time
 from multiprocessing import Pipe, freeze_support
 from hyo2.abc.lib.testing import Testing
-from hyo2.kng.emu.sis5.lib.process import Sis5Process
+from hyo2.kng.emu.kctrl.lib.kctrl_process import KCtrlProcess
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     logger.debug("starting SIS5 process ...")
     parent_conn, child_conn = Pipe()
-    p = Sis5Process(conn=child_conn, ip_out=ip_out, port_out=port_out)
+    p = KCtrlProcess(conn=child_conn, ip_out=ip_out, port_out=port_out)
     p.set_files(test_files)
     p.start()
 
@@ -39,5 +39,5 @@ if __name__ == '__main__':
         logger.debug(" ... %d ..." % count)
         time.sleep(0.5)
 
-    logger.debug("SIS5 process is alive? %s" % p.is_alive())
+    logger.debug("KCtrl process is alive? %s" % p.is_alive())
     logger.debug('%s.exitcode = %s' % (p.name, p.exitcode))  # <0: killed with signal; >0: exited with error

@@ -3,7 +3,7 @@ import os
 import time
 from multiprocessing import Pipe, freeze_support
 from hyo2.abc.lib.testing import Testing
-from hyo2.kng.emu.sis4.lib.process import Sis4Process
+from hyo2.kng.emu.sis4.lib.sis4_process import Sis4Process
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

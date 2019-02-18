@@ -3,18 +3,18 @@ import os
 import time
 from multiprocessing import Process, Event
 import threading
-from hyo2.kng.emu.sis5.lib.threads.svp_thread import SvpThread
-from hyo2.kng.emu.sis5.lib.threads.replay_thread import ReplayThread
+from hyo2.kng.emu.kctrl.lib.threads.svp_thread import SvpThread
+from hyo2.kng.emu.kctrl.lib.threads.replay_thread import ReplayThread
 
 logger = logging.getLogger(__name__)
 
 
-class Sis5Process(Process):
-    """SIS5 process simulator"""
+class KCtrlProcess(Process):
+    """KCtrl process simulator"""
 
     def __init__(self, conn, replay_timing=1.0,
                  port_in=6020, port_out=26103, ip_out="224.1.20.40",
-                 target=None, name="SIS5", verbose=False):
+                 target=None, name="KCtrl", verbose=False):
         Process.__init__(self, target=target, name=name)
         self.conn = conn
         self.daemon = True
@@ -26,9 +26,9 @@ class Sis5Process(Process):
         self.port_out = port_out
         self.ip_out = ip_out
 
-        # SIS 5 mode
-        self.sis_5_mode = ip_out[:4] in ["224.", "225."]
-        logger.debug("SIS 5 mode: %s" % self.sis_5_mode)
+        # KCtrl mode
+        self.kctrl_mode = ip_out[:4] in ["224.", "225."]
+        logger.debug("KCtrl mode: %s" % self.kctrl_mode)
 
         # threads
         self.t_svp = None

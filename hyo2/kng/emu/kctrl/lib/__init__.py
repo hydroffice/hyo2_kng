@@ -1,11 +1,11 @@
 """
 Hydro-Package
-SIS5
+KCtrl
 """
 
 import os
 from hyo2.abc.lib.lib_info import LibInfo
-from hyo2.kng.emu.sis5 import name, __version__
+from hyo2.kng.emu.kctrl import name, __version__
 import logging
 
 log = logging.getLogger(__name__)
@@ -25,8 +25,8 @@ lib_info.lib_path = os.path.abspath(os.path.dirname(__file__))
 
 lib_info.lib_url = "https://www.hydroffice.org/kng/"
 lib_info.lib_manual_url = "https://www.hydroffice.org/manuals/kng/index.html"
-lib_info.lib_support_email = "sis5@hydroffice.org"
-lib_info.lib_latest_url = "https://www.hydroffice.org/latest/sis5.txt"
+lib_info.lib_support_email = "kctrl@hydroffice.org"
+lib_info.lib_latest_url = "https://www.hydroffice.org/latest/kctrl.txt"
 
 lib_info.lib_dep_dict = {
     "hyo2.abc": "hyo2.abc",

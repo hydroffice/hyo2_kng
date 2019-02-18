@@ -21,7 +21,7 @@ import sys
 from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT, TOC
 from PyInstaller.compat import is_darwin, is_win
 
-from hyo2.sis4 import __version__ as sis_version
+from hyo2.kng.emu.sis4 import __version__ as sis_version
 
 is_beta = True
 if is_beta:
@@ -106,7 +106,7 @@ share_folder = os.path.join(python_path(), "Lib", "site-packages", "shiboken2", 
 output_folder = os.path.join("shiboken2", "support", "signature", "lib")
 shiboken2_data2 = collect_folder_data(input_data_folder=share_folder, relative_output_folder=output_folder)
 abc_data = collect_pkg_data('hyo2.abc')
-sis_data = collect_pkg_data('hyo2.sis4')
+kng_data = collect_pkg_data('hyo2.kng')
 
 icon_file = os.path.join('freeze', 'SIS4.ico')
 if is_darwin:
@@ -140,7 +140,7 @@ coll = COLLECT(exe,
                shiboken2_data,
                shiboken2_data2,
                abc_data,
-               sis_data,
+               kng_data,
                strip=None,
                upx=True,
                name='SIS4.%s%s' % (sis_version, beta))

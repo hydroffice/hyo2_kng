@@ -3,8 +3,8 @@ import os
 from multiprocessing import Pipe
 from threading import Timer
 from PySide2 import QtCore, QtGui, QtWidgets
-from hyo2.kng.emu.sis5.lib.sis5_process import Sis5Process
-from hyo2.kng.emu.sis5.app.infoviewer import InfoViewerDialog
+from hyo2.kng.emu.kctrl.lib.kctrl_process import KCtrlProcess
+from hyo2.kng.emu.kctrl.app.infoviewer import InfoViewerDialog
 from hyo2.abc.app.qt_progress import QtProgress
 
 logger = logging.getLogger(__name__)
@@ -288,9 +288,8 @@ class ControlPanel(QtWidgets.QWidget):
         output_ip = self.set_output_ip.text()
         output_port = int(self.set_output_port.text())
         self.conn, self.child_conn = Pipe()
-        self.sis = Sis5Process(conn=self.child_conn, port_in=input_port, port_out=output_port, ip_out=output_ip,
-                               replay_timing=self._replay_timing,
-                               verbose=self.set_verbose.isChecked())
+        self.sis = KCtrlProcess(conn=self.child_conn, port_in=input_port, port_out=output_port, ip_out=output_ip,
+                                replay_timing=self._replay_timing, verbose=self.set_verbose.isChecked())
         logger.debug('created new simulator')
 
         file_list = list()

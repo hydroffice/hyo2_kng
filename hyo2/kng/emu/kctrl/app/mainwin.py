@@ -1,6 +1,6 @@
 import logging
 from PySide2 import QtCore, QtGui, QtWidgets
-from hyo2.kng.emu.sis5.app import app_info, controlpanel
+from hyo2.kng.emu.kctrl.app import app_info, controlpanel
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +12,7 @@ class MainWin(QtWidgets.QMainWindow):
 
         self.name = app_info.app_name
         self.version = app_info.app_version
+        logger.debug('%s v.%s' % (self.name, self.version))
 
         self.setWindowTitle('%s v.%s' % (self.name, self.version))
         # noinspection PyArgumentList

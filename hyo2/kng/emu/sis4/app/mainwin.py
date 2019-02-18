@@ -12,6 +12,7 @@ class MainWin(QtWidgets.QMainWindow):
 
         self.name = app_info.app_name
         self.version = app_info.app_version
+        logger.debug('%s v.%s' % (self.name, self.version))
 
         self.setWindowTitle('%s v.%s' % (self.name, self.version))
         # noinspection PyArgumentList

@@ -1,6 +1,6 @@
 import os
 from hyo2.abc.app.app_info import AppInfo
-from hyo2.kng.emu.sis5 import name, __version__
+from hyo2.kng.emu.kctrl import name, __version__
 
 app_info = AppInfo()
 

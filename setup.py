@@ -55,10 +55,10 @@ setup(
     python_requires='>=3.5',
     entry_points={
         "gui_scripts": [
-            "SIS4 = hyo2.emu.sis4.app:main",
-            "SIS5 = hyo2.emu.sis5.app:main",
         ],
         "console_scripts": [
+            "SIS4 = hyo2.kng.emu.sis4.__main__:main",
+            "KCtrl = hyo2.kng.emu.kctrl.__main__:main",
         ],
     },
     test_suite="tests",
