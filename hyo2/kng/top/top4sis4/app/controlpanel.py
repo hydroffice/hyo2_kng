@@ -5,6 +5,7 @@ from threading import Timer
 from PySide2 import QtCore, QtGui, QtWidgets
 from hyo2.kng.top.top4sis4.lib.top4sis4_process import Top4Sis4Process
 from hyo2.kng.top.top4sis4.app.infoviewer import InfoViewerDialog
+from hyo2.kng.lib.sis4.sis4_messages import Sis4Msg
 from hyo2.abc.app.qt_progress import QtProgress
 
 logger = logging.getLogger(__name__)
@@ -163,6 +164,8 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.message_list = QtWidgets.QComboBox()
         vbox.addWidget(self.message_list)
+        self.message_list.addItems(list(Sis4Msg.sis4_msg_types.keys()))
+        self.message_list.currentTextChanged.connect(self.update_message_text)
 
         self.message_text = QtWidgets.QTextEdit()
         vbox.addWidget(self.message_text)
@@ -247,6 +250,19 @@ class ControlPanel(QtWidgets.QWidget):
 
         self._active = False
         self.info_viewer.hide()
+
+    def update_message_text(self, txt: str) -> None:
+        logger.debug("update message for %s" % txt)
+
+        if txt == r"N\A":
+            self.message_text.clear()
+            return
+
+        if txt == r"TX SVP":
+            return
+
+        if txt == r"REQUEST CURRENT SVP":
+            return
 
     def send_message(self):
         logger.debug("send message")
