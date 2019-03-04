@@ -5,7 +5,6 @@ from pip._internal import main as pip
 import sys
 import os.path
 import shutil
-import zipfile
 
 try:
     import wget
@@ -18,7 +17,7 @@ except ImportError as e:
         print("  - unable to install wget: %s" % e)
         sys.exit(1)
 
-# list of archives to download
+# list of files to download
 data_files = [
     "0010_20181215_042649_PressureDrop.kmall",
     "0024_20180628_122700_ShipName.kmall",
