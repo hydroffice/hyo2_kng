@@ -113,7 +113,6 @@ class SvpThread(threading.Thread):
                 logger.debug("data sent")
 
     def _sis_5(self, data):
-        date = None
         secs = None
 
         if data[0] == '$' and data[3:6] == "R20":
@@ -202,10 +201,10 @@ class SvpThread(threading.Thread):
 
                     fields = l.split(",")
                     num_entries = int(fields[2])
-                    timestamp = datetime.datetime.strptime(fields[3], "%H%M%S")
-                    secs = (timestamp - timestamp.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+                    timedelta = datetime.datetime.strptime(fields[3], "%H%M%S") - \
+                                datetime.datetime.strptime("000000", "%H%M%S")
                     datestamp = datetime.datetime(day=int(fields[4]), month=int(fields[5]), year=int(fields[6]))
-                    date = int(datestamp.strftime("%Y%m%d"))
+                    secs = (datestamp + timedelta - datetime.datetime(1970, 1, 1)).total_seconds()
                     depths = np.zeros(num_entries)
                     speeds = np.zeros(num_entries)
                     depths[count] = fields[7]
@@ -222,39 +221,49 @@ class SvpThread(threading.Thread):
 
                 count += 1
 
-        ssp = self._create_all_ssp(depths=depths, speeds=speeds, date=date, secs=secs)
+        ssp = self._create_all_ssp(depths=depths, speeds=speeds, secs=secs)
         return ssp
 
-    def _create_all_ssp(self, depths: np.ndarray, speeds: np.ndarray,
-                        date: Optional[int] = None, secs: Optional[int] = None):
+    def _create_all_ssp(self, depths: np.ndarray, speeds: np.ndarray, secs: Optional[int] = None):
         if self.verbose:
-            logger.debug('creating a binary ssp')
+            logger.debug('creating a binary svp')
 
         d_res = 1  # depth resolution
         # TODO: improve it with the received metadata
         now = datetime.datetime.utcnow()
-        if not date:
-            date = int(now.strftime("%Y%m%d"))
-        if not isinstance(date, int):
-            date = int(date)
         if not secs:
-            secs = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+            secs = (now - datetime.datetime(1970, 1, 1)).total_seconds()
         if not isinstance(secs, int):
             secs = int(secs)
 
+        header_struct = '<I4cBBHII'
+        header_size = struct.calcsize(header_struct)
+        svp_struct = '<2H4cIdd'
+        svp_size = struct.calcsize(svp_struct)
+        fields_struct = '<2fI2f'
+        fields_size = struct.calcsize(fields_struct)
+        end_struct = '<H'
+        end_size = struct.calcsize(end_struct)
+
+        total_svp_size = svp_size + fields_size * depths.size
+        total_size = header_size + total_svp_size + end_size
+
         # -- header
-        # logger.debug("types: %s %s %s %s" % (type(date), type(secs), type(depths.size), type(d_res)))
-        svp = struct.pack("<BBHIIHHIIHH", 2, 0x55, 122, date, secs * 1000, 1, 123, date, secs, depths.size, d_res)
+        svp = struct.pack(header_struct, total_size, b'#', b'S', b'V', b'P', 0, 0, 0, 0, 0)
+
+        # -- svp
+        logger.debug("secs: %s" % (secs, ))
+        svp += struct.pack('<2H4cI', total_svp_size, depths.size, b' ', b'S', b'0', b'0', secs)
+        svp += struct.pack('<dd', 43.1355, -70.9395)
 
         # -- body
         for count in range(depths.size):
-            depth = int(depths[count] * d_res / 0.01)
-            speed = int(speeds[count] * 10)
-            pair = struct.pack("<II", depth, speed)
+            depth = depths[count]
+            speed = speeds[count]
+            pair = struct.pack(fields_struct, depth, speed, 0, 0.0, 0.0)
             svp += pair
 
         # -- footer
-        footer = struct.pack("<BH", 3, 0)  # Not bothering with checksum since SVP Editor ignores it anyway
-        svp += footer
+        svp += struct.pack(end_struct, total_size)
 
         return svp

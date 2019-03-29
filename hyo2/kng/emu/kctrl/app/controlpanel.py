@@ -18,7 +18,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.sis = None
 
         # default values SIS 5
-        self.default_sis5_input_port = "4001"
+        self.default_sis5_input_port = "14002"
         self.default_sis5_output_ip = "224.1.20.40"
         self.default_sis5_output_port = "6020"
 
