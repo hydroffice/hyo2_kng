@@ -212,7 +212,10 @@ class ReplayThread(threading.Thread):
                 if base.type == b'#SVP':
                     self.ssp.append(dg_data)
 
-            self.sock_out.sendto(dg_data, (self.ip_out, self.port_out))
+            try:
+                self.sock_out.sendto(dg_data, (self.ip_out, self.port_out))
+            except OSError as e:
+                logger.warning("%s" % e)
 
             with self._lock:
                 time.sleep(self._replay_timing)
