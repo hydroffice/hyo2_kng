@@ -19,6 +19,5 @@ def sis_gui():
     sys.exit(app.exec_())
 
 
-if __name__ == '__main__':
-    freeze_support()
-    sis_gui()
+freeze_support()
+sis_gui()
