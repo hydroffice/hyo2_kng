@@ -3,17 +3,17 @@ import os
 import time
 from multiprocessing import Process, Event
 import threading
-from hyo2.kng.emu.sis4.lib.threads.svp_thread import SvpThread
-from hyo2.kng.emu.sis4.lib.threads.replay_thread import ReplayThread
+from hyo2.kng.emu.sis.lib.threads.svp_thread import SvpThread
+from hyo2.kng.emu.sis.lib.threads.replay_thread import ReplayThread
 
 logger = logging.getLogger(__name__)
 
 
-class Sis4Process(Process):
-    """SIS4 process simulator"""
+class SisProcess(Process):
+    """SIS process simulator"""
 
     def __init__(self, conn, replay_timing=1.0, port_in=4001, port_out=26103, ip_out="localhost",
-                 target=None, name="SIS4", verbose=False):
+                 target=None, name="SIS", sis5: bool=False, verbose=False):
         Process.__init__(self, target=target, name=name)
         self.conn = conn
         self.daemon = True
@@ -24,6 +24,7 @@ class Sis4Process(Process):
         self.port_in = port_in
         self.port_out = port_out
         self.ip_out = ip_out
+        self.sis5 = sis5
 
         # threads
         self.t_svp = None
@@ -64,15 +65,21 @@ class Sis4Process(Process):
 
         lists_lock = threading.Lock()
 
-        self.t_svp = SvpThread(runtime=self.runtime,
-                               installation=self.installation,
-                               ssp=self.ssp,
-                               lists_lock=lists_lock,
-                               port_in=self.port_in,
-                               port_out=self.port_out,
-                               ip_out=self.ip_out,
-                               verbose=self.verbose)
-        self.t_svp.start()
+        if self.sis5:
+
+            logger.debug('SVP uncoded for SIS5')
+
+        else:  # SIS 4
+
+            self.t_svp = SvpThread(runtime=self.runtime,
+                                   installation=self.installation,
+                                   ssp=self.ssp,
+                                   lists_lock=lists_lock,
+                                   port_in=self.port_in,
+                                   port_out=self.port_out,
+                                   ip_out=self.ip_out,
+                                   verbose=self.verbose)
+            self.t_svp.start()
 
         self.t_replay = ReplayThread(runtime=self.runtime,
                                      installation=self.installation,
@@ -80,23 +87,11 @@ class Sis4Process(Process):
                                      lists_lock=lists_lock,
                                      files=self.files,
                                      replay_timing=self._replay_timing,
-                                     port_in=self.port_in,
                                      port_out=self.port_out,
                                      ip_out=self.ip_out,
+                                     sis5=self.sis5,
                                      verbose=self.verbose)
         self.t_replay.start()
-
-    @staticmethod
-    def init_logger():
-        global logger
-        logger = logging.getLogger()
-        logger.setLevel(logging.NOTSET)
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)  # change to WARNING to reduce verbosity, DEBUG for high verbosity
-        ch_formatter = logging.Formatter('<PRC> %(levelname)-9s %(name)s.%(funcName)s:%(lineno)d > %(message)s')
-        ch.setFormatter(ch_formatter)
-        logger.addHandler(ch)
-        logger = logging.getLogger(__name__)
 
     def run(self):
         """Start the simulation"""
@@ -110,11 +105,16 @@ class Sis4Process(Process):
 
             if self.shutdown.is_set():
                 self.conn.send("shutdown")
-                self.t_replay.stop()
-                self.t_svp.stop()
-                self.t_replay.join()
-                self.t_svp.join()
 
+                if self.sis5:
+                    logger.debug('SVP uncoded for SIS5')
+
+                else:
+                    self.t_svp.stop()
+                    self.t_svp.join()
+
+                self.t_replay.stop()
+                self.t_replay.join()
                 break
 
             if self.conn.poll():
@@ -123,6 +123,7 @@ class Sis4Process(Process):
 
                 if isinstance(data, float):
                     logger.debug("new timing: %s" % data)
+
                     self.t_replay.lock_data()
                     self.t_replay.replay_timing = data
                     self.t_replay.unlock_data()

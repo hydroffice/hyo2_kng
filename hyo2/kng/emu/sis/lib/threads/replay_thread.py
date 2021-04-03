@@ -5,7 +5,8 @@ import threading
 import time
 from threading import Lock
 from typing import Optional
-from hyo2.kng.emu.sis4.lib.kng_all import KngAll
+from hyo2.kng.emu.sis.lib.kng_all import KngAll
+from hyo2.kng.emu.sis.lib.kng_kmall import KngKmall
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +19,14 @@ class ReplayThread(threading.Thread):
     """
 
     def __init__(self, installation: list, runtime: list, ssp: list, lists_lock: threading.Lock, files: list,
-                 replay_timing: float = 1.0, port_in: int = 4001, port_out: int = 26103,
-                 ip_out: str = "localhost", target: Optional[object] = None, name: str = "REP",
+                 replay_timing: float = 1.0, port_out: int = 26103,
+                 ip_out: str = "localhost", target: Optional[object] = None, name: str = "REP", sis5: bool = False,
                  verbose: bool = False):
         threading.Thread.__init__(self, target=target, name=name)
         self.verbose = verbose
-        self.port_in = port_in
         self.port_out = port_out
         self.ip_out = ip_out
+        self.sis5 = sis5
         self.files = files
         self._replay_timing = replay_timing
 
@@ -72,8 +73,8 @@ class ReplayThread(threading.Thread):
             self.sock_out = None
 
     def run(self):
-        logger.debug("%s started -> in %s, out %s:%s, timing: %s"
-                     % (self.name, self.port_in, self.ip_out, self.port_out, self._replay_timing))
+        logger.debug("%s started -> out %s:%s, timing: %s"
+                     % (self.name, self.ip_out, self.port_out, self._replay_timing))
 
         self.init_sockets()
         while True:
@@ -110,9 +111,14 @@ class ReplayThread(threading.Thread):
                 break
 
             fp_ext = os.path.splitext(fp)[-1].lower()
-            if fp_ext not in [".all", ".wcd"]:
-                logger.info("SIS 4 mode -> skipping unsupported file extension: %s" % fp)
-                continue
+            if self.sis5:
+                if fp_ext not in [".kmall"]:
+                    logger.info("SIS 5 mode -> skipping unsupported file extension: %s" % fp)
+                    continue
+            else:
+                if fp_ext not in [".all", ".wcd"]:
+                    logger.info("SIS 4 mode -> skipping unsupported file extension: %s" % fp)
+                    continue
 
             try:
                 f = open(fp, 'rb')
@@ -129,7 +135,10 @@ class ReplayThread(threading.Thread):
                     self._close_sockets()
                     break
 
-                break_loop = self._sis_4(f, f_sz)
+                if self.sis5:
+                    break_loop = self._sis_5(f, f_sz)
+                else:
+                    break_loop = self._sis_4(f, f_sz)
                 if break_loop:
                     break
 
@@ -141,6 +150,67 @@ class ReplayThread(threading.Thread):
             f.close()
             if self.verbose:
                 logger.debug("data loaded > datagrams: %s" % self.dg_counter)
+
+    def _sis_5(self, f, f_sz) -> bool:
+        # guardian to avoid to read beyond the EOF
+        if (f.tell() + 16) > f_sz:
+            if self.verbose:
+                logger.debug("EOF")
+            return True
+
+        base = KngKmall(verbose=True)
+        ret = base.read(f, f_sz)
+        # logger.info(ret)
+        if ret == KngKmall.Flags.UNEXPECTED_EOF:
+
+            logger.warning("troubles in reading file > SKIP (reason: unexpected EOF)")
+            return True
+
+        elif ret == KngKmall.Flags.CORRUPTED_END_DATAGRAM:
+
+            f.seek(-(base.length + 3), 1)
+            logger.warning("troubles in reading final datagram part > REALIGN to position: %s" % f.tell())
+
+        elif ret == KngKmall.Flags.VALID:
+
+            self.dg_counter += 1
+
+        else:
+            raise RuntimeError("unknown return %s from KngKmall" % ret)
+
+        # Read and send only the desired datagrams:
+        # - b'#IIP': 'Installation parameters and sensor setup'
+        # - b'#IOP': 'Runtime parameters as chosen by operator'
+        # - b'#SPO': 'Sensor (S) data for position (PO)'
+        # - b'#MRZ': 'Multibeam (M) raw range (R) and depth(Z) datagram'
+        # - b'#SVP': 'Sensor (S) data from sound velocity (V) profile (P) or CTD'
+        if base.id in [b'#IIP', b'#IOP', b'#SPO', b'#MRZ', b'#SVP']:
+            logger.debug("%s > sending dg %s (length: %sB)"
+                         % (base.dg_time, base.id, base.length))
+            f.seek(-base.length, 1)
+            dg_data = f.read(base.length)
+
+            # Stores a few datagrams of interest in data lists:
+            with self.lists_lock:
+                if base.id == b'#IIP':
+                    self.installation.clear()
+                    self.installation.append(dg_data)
+                if base.id == b'#IOP':
+                    self.runtime.clear()
+                    self.runtime.append(dg_data)
+                if base.id == b'#SVP':
+                    self.ssp.clear()
+                    self.ssp.append(dg_data)
+
+            if base.length > 65507:
+                logger.warning('skipping for length: %s %s -> datagram split not implemented' % (base.id, base.length))
+            else:
+                self.sock_out.sendto(dg_data, (self.ip_out, self.port_out))
+
+            with self._lock:
+                time.sleep(self._replay_timing)
+
+        return False
 
     def _sis_4(self, f, f_sz) -> bool:
         # guardian to avoid to read beyond the EOF
@@ -198,10 +268,13 @@ class ReplayThread(threading.Thread):
             # Stores a few datagrams of interest in data lists:
             with self.lists_lock:
                 if base.id == 0x49:
+                    self.installation.clear()
                     self.installation.append(dg_data)
                 if base.id == 0x52:
+                    self.runtime.clear()
                     self.runtime.append(dg_data)
                 if base.id == 0x55:
+                    self.ssp.clear()
                     self.ssp.append(dg_data)
 
             self.sock_out.sendto(dg_data, (self.ip_out, self.port_out))

@@ -3,8 +3,8 @@ import os
 from multiprocessing import Pipe
 from threading import Timer
 from PySide2 import QtCore, QtGui, QtWidgets
-from hyo2.kng.emu.sis4.lib.sis4_process import Sis4Process
-from hyo2.kng.emu.sis4.app.infoviewer import InfoViewerDialog
+from hyo2.kng.emu.sis.lib.sis_process import SisProcess
+from hyo2.kng.emu.sis.app.infoviewer import InfoViewerDialog
 from hyo2.abc.app.qt_progress import QtProgress
 
 logger = logging.getLogger(__name__)
@@ -17,10 +17,11 @@ class ControlPanel(QtWidgets.QWidget):
         super(ControlPanel, self).__init__()
         self.sis = None
 
-        # default values SIS 4 vs. 5
+        # default SIS values
         self.default_sis4_input_port = "4001"
-        self.default_sis4_output_ip = "127.0.0.1"
-        self.default_sis4_output_port = "16103"
+        self.default_sis5_input_port = "14002"
+        self.default_sis_output_ip = "127.0.0.1"
+        self.default_sis_output_port = "16103"
 
         self.vbox = QtWidgets.QVBoxLayout()
         self.setLayout(self.vbox)
@@ -28,6 +29,8 @@ class ControlPanel(QtWidgets.QWidget):
         self.sis_settings = QtWidgets.QGroupBox("settings")
         self.sis_settings.setStyleSheet("QGroupBox::title { color: rgb(155, 155, 155); }")
         self.vbox.addWidget(self.sis_settings)
+        self.sis_4 = None
+        self.sis_5 = None
         self.set_input_port = None
         self.set_output_ip = None
         self.set_output_port = None
@@ -38,6 +41,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.vbox.addWidget(self.sis_inputs)
         self.list_files = None
         self._make_sis_inputs()
+        self.set_sis_4()  # to also clear the file list
 
         self.sis_commands = QtWidgets.QGroupBox("commands")
         self.sis_commands.setStyleSheet("QGroupBox::title { color: rgb(155, 155, 155); }")
@@ -67,6 +71,29 @@ class ControlPanel(QtWidgets.QWidget):
 
         vbox = QtWidgets.QVBoxLayout()
         self.sis_settings.setLayout(vbox)
+
+        # default values
+        hbox = QtWidgets.QHBoxLayout()
+        vbox.addLayout(hbox)
+        text_input_port = QtWidgets.QLabel("SIS Version:")
+        hbox.addWidget(text_input_port)
+        text_input_port.setMinimumWidth(80)
+        self.sis_4 = QtWidgets.QRadioButton()
+        hbox.addWidget(self.sis_4)
+        self.sis_4.setText("SIS4")
+        self.sis_4.setToolTip('Settings for SIS 4')
+        self.sis_4.setChecked(True)
+        # noinspection PyUnresolvedReferences
+        self.sis_4.clicked.connect(self.set_sis_4)
+        self.sis_5 = QtWidgets.QRadioButton()
+        hbox.addWidget(self.sis_5)
+        self.sis_5.setText("SIS5")
+        self.sis_5.setToolTip('Settings for SIS 5')
+        # noinspection PyUnresolvedReferences
+        self.sis_5.clicked.connect(self.set_sis_5)
+        hbox.addStretch()
+
+        vbox.addSpacing(4)
 
         # input port
         hbox = QtWidgets.QHBoxLayout()
@@ -103,20 +130,6 @@ class ControlPanel(QtWidgets.QWidget):
         validator = QtGui.QIntValidator(0, 65535)
         self.set_output_port.setValidator(validator)
 
-        vbox.addSpacing(4)
-
-        # default values
-        hbox = QtWidgets.QHBoxLayout()
-        vbox.addLayout(hbox)
-        hbox.addStretch()
-        button_sis_4 = QtWidgets.QPushButton()
-        hbox.addWidget(button_sis_4)
-        button_sis_4.setText("SIS 4 Defaults")
-        button_sis_4.setToolTip('Set default values for SIS 4')
-        # noinspection PyUnresolvedReferences
-        button_sis_4.clicked.connect(self.set_defaults_sis_4)
-        hbox.addStretch()
-
         vbox.addSpacing(12)
 
         # replay timing
@@ -148,12 +161,24 @@ class ControlPanel(QtWidgets.QWidget):
         hbox.addWidget(self.set_verbose)
         hbox.addStretch()
 
-        self.set_defaults_sis_4()
-
-    def set_defaults_sis_4(self):
+    def set_sis_4(self):
+        self.list_files.clear()
         self.set_input_port.setText(self.default_sis4_input_port)
-        self.set_output_ip.setText(self.default_sis4_output_ip)
-        self.set_output_port.setText(self.default_sis4_output_port)
+        self.set_output_ip.setText(self.default_sis_output_ip)
+        self.set_output_port.setText(self.default_sis_output_port)
+
+    def set_sis_5(self):
+        self.list_files.clear()
+        self.set_input_port.setText(self.default_sis5_input_port)
+        self.set_output_ip.setText(self.default_sis_output_ip)
+        self.set_output_port.setText(self.default_sis_output_port)
+
+    def enable_commands(self, enable: bool):
+        self.sis_4.setEnabled(enable)
+        self.sis_5.setEnabled(enable)
+        self.set_input_port.setEnabled(enable)
+        self.set_output_ip.setEnabled(enable)
+        self.set_output_port.setEnabled(enable)
 
     def _make_sis_inputs(self):
 
@@ -219,10 +244,19 @@ class ControlPanel(QtWidgets.QWidget):
         source_folder = settings.value("source_folder", self.here)
 
         # ask the file path to the user
-        # noinspection PyCallByClass
-        selections, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Kongsberg data files", source_folder,
-                                                               "EM .all files (*.all *.wcd);;"
-                                                               "All files (*.*)", "")
+        if self.sis_4.isChecked():
+            # noinspection PyCallByClass
+            selections, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Kongsberg data files", source_folder,
+                                                                   "EM .all files (*.all *.wcd);;"
+                                                                   "All files (*.*)", "")
+        elif self.sis_5.isChecked():
+            # noinspection PyCallByClass
+            selections, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Kongsberg data files", source_folder,
+                                                                   "KMall .kmall files (*.kmall);;"
+                                                                   "All files (*.*)", "")
+        else:
+            raise RuntimeError('Invalid SIS type')
+
         if not selections:
             logger.debug('no selection')
             return
@@ -251,21 +285,30 @@ class ControlPanel(QtWidgets.QWidget):
 
     def monitoring(self):
 
-        if self.conn is None:
-            return
+        try:
+            self.enable_commands(enable=False)
 
-        if self.conn.poll():
+            if self.conn is None:
+                self.enable_commands(enable=True)
+                return
 
-            data = self.conn.recv()
+            if self.conn.poll():
 
-            if isinstance(data, str):
-                self.info_viewer.append(data)
-                # logger.debug("%s" % data)
+                data = self.conn.recv()
 
-        if not self._active:
-            return
+                if isinstance(data, str):
+                    self.info_viewer.append(data)
+                    # logger.debug("%s" % data)
 
-        Timer(0.5, self.monitoring).start()
+            if not self._active:
+                self.enable_commands(enable=True)
+                return
+
+            Timer(0.5, self.monitoring).start()
+
+        except Exception as e:
+            logger.warning(e)
+            self.enable_commands(enable=False)
 
     def start_emulation(self):
         if self.sis:
@@ -283,9 +326,9 @@ class ControlPanel(QtWidgets.QWidget):
         output_ip = self.set_output_ip.text()
         output_port = int(self.set_output_port.text())
         self.conn, self.child_conn = Pipe()
-        self.sis = Sis4Process(conn=self.child_conn, port_in=input_port, port_out=output_port, ip_out=output_ip,
-                               replay_timing=self._replay_timing,
-                               verbose=self.set_verbose.isChecked())
+        self.sis = SisProcess(conn=self.child_conn, port_in=input_port, port_out=output_port, ip_out=output_ip,
+                              replay_timing=self._replay_timing, sis5=self.sis_5.isChecked(),
+                              verbose=self.set_verbose.isChecked())
         logger.debug('created new simulator')
 
         file_list = list()

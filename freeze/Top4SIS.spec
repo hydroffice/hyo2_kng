@@ -4,7 +4,7 @@
 #
 # To compile, execute the following within the source directory:
 #
-# python /path/to/pyinstaller.py SIS.spec
+# python /path/to/pyinstaller.py Top4SIS.spec
 #
 # The resulting .exe file is placed in the dist/SIS folder.
 #
@@ -23,7 +23,7 @@ from PyInstaller.compat import is_darwin, is_win
 
 from hyo2.kng.emu.sis4 import __version__ as sis_version
 
-is_beta = False
+is_beta = True
 if is_beta:
     beta = ".b%s" % datetime.now().strftime("%Y%m%d%H%M%S")
 else:
@@ -99,16 +99,22 @@ share_folder = os.path.join(python_path(), "Library", "share")
 output_folder = os.path.join("Library", "share")
 pyproj_data = collect_folder_data(input_data_folder=share_folder, relative_output_folder=output_folder)
 pyside2_data = collect_pkg_data('PySide2')
+share_folder = os.path.join(python_path(), "Lib", "site-packages", "shiboken2", "support", "signature")
+output_folder = os.path.join("shiboken2", "support", "signature")
+shiboken2_data = collect_folder_data(input_data_folder=share_folder, relative_output_folder=output_folder)
+share_folder = os.path.join(python_path(), "Lib", "site-packages", "shiboken2", "support", "signature", "lib")
+output_folder = os.path.join("shiboken2", "support", "signature", "lib")
+shiboken2_data2 = collect_folder_data(input_data_folder=share_folder, relative_output_folder=output_folder)
 abc_data = collect_pkg_data('hyo2.abc')
 kng_data = collect_pkg_data('hyo2.kng')
 
-icon_file = os.path.join('freeze', 'SIS4.ico')
+icon_file = os.path.join('freeze', 'Top4SIS.ico')
 if is_darwin:
-    icon_file = os.path.join('freeze', 'SIS4.icns')
+    icon_file = os.path.join('freeze', 'Top4SIS.icns')
 
-a = Analysis(['SIS4.py'],
+a = Analysis(['Top4SIS.py'],
              pathex=[],
-             hiddenimports=["PIL", "typing"],
+             hiddenimports=["PIL", ],
              excludes=["IPython", "PyQt4", "PyQt5", "pandas", "scipy", "sphinx", "sphinx_rtd_theme",
                        "OpenGL_accelerate", "FixTk", "tcl", "tk", "_tkinter", "tkinter", "Tkinter",
                        "wx"],
@@ -119,7 +125,7 @@ pyz = PYZ(a.pure)
 exe = EXE(pyz,
           a.scripts,
           exclude_binaries=True,
-          name='SIS4.%s%s' % (sis_version, beta),
+          name='Top4SIS.%s%s' % (sis_version, beta),
           debug=False,
           strip=None,
           upx=True,
@@ -131,8 +137,10 @@ coll = COLLECT(exe,
                a.datas,
                pyproj_data,
                pyside2_data,
+               shiboken2_data,
+               shiboken2_data2,
                abc_data,
                kng_data,
                strip=None,
                upx=True,
-               name='SIS4.%s%s' % (sis_version, beta))
+               name='Top4SIS.%s%s' % (sis_version, beta))

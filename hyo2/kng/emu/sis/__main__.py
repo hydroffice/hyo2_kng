@@ -2,7 +2,7 @@ import logging
 import sys
 from multiprocessing import freeze_support
 from PySide2 import QtWidgets
-from hyo2.kng.emu.sis4.app import mainwin
+from hyo2.kng.emu.sis.app import mainwin
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)-9s %(name)s.%(funcName)s:%(lineno)d > %(message)s")
 logging.getLogger("hyo2").setLevel(logging.INFO)

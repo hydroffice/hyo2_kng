@@ -1,12 +1,14 @@
 import logging
 import sys
 from multiprocessing import freeze_support
-from PySide2 import QtWidgets
-from hyo2.kng.emu.sis4.app.mainwin import MainWin
 
-logging.basicConfig(level=logging.WARNING, format="%(levelname)-9s %(name)s.%(funcName)s:%(lineno)d > %(message)s")
-logging.getLogger("hyo2").setLevel(logging.INFO)
-logging.getLogger("hyo2.kng").setLevel(logging.DEBUG)
+from PySide2 import QtWidgets
+
+from hyo2.abc.lib.logging import set_logging
+from hyo2.kng.top.top4sis4.app.mainwin import MainWin
+
+logger = logging.getLogger(__name__)
+set_logging(ns_list=["hyo2.kng", ])
 
 
 def sis_gui():

@@ -3,7 +3,7 @@ import os
 import time
 from multiprocessing import Pipe, freeze_support
 from hyo2.abc.lib.testing import Testing
-from hyo2.kng.emu.sis4.lib.sis4_process import Sis4Process
+from hyo2.kng.emu.sis.lib.sis4_process import SisProcess
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     logger.debug("starting SIS4 process ...")
     parent_conn, child_conn = Pipe()
-    p = Sis4Process(conn=child_conn, ip_out=ip_out, port_out=port_out)
+    p = SisProcess(conn=child_conn, ip_out=ip_out, port_out=port_out)
     p.set_files(test_files)
     p.start()
 

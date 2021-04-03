@@ -2,7 +2,7 @@ import os
 import unittest
 from multiprocessing import Pipe, freeze_support
 from hyo2.abc.lib.testing import Testing
-from hyo2.kng.emu.sis4.lib.sis4_process import Sis4Process
+from hyo2.kng.emu.sis.lib.sis4_process import SisProcess
 
 
 class TestSis4Process(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestSis4Process(unittest.TestCase):
         freeze_support()
 
         parent_conn, child_conn = Pipe()
-        p = Sis4Process(conn=child_conn, ip_out=self.ip_out, port_out=self.port_out)
+        p = SisProcess(conn=child_conn, ip_out=self.ip_out, port_out=self.port_out)
 
         p.start()
         self.assertTrue(p.is_alive())
@@ -34,7 +34,7 @@ class TestSis4Process(unittest.TestCase):
         freeze_support()
 
         parent_conn, child_conn = Pipe()
-        p = Sis4Process(conn=child_conn, ip_out=self.ip_out, port_out=self.port_out)
+        p = SisProcess(conn=child_conn, ip_out=self.ip_out, port_out=self.port_out)
 
         p.set_files(self.test_files)
 
