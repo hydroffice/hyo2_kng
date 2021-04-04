@@ -37,4 +37,4 @@ KNG Library and Apps
 General info
 ------------
 
-Library and apps for Kongsberg Maritime data interaction.
+Library and apps for Kongsberg Maritime's SIS data interaction.

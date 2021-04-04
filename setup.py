@@ -51,14 +51,15 @@ setup(
     ],
     install_requires=[
         "hyo2.abc",
+        "PySide2",
+        "selenium"
     ],
     python_requires='>=3.5',
     entry_points={
         "gui_scripts": [
         ],
         "console_scripts": [
-            "SIS4 = hyo2.kng.emu.sis4.__main__:main",
-            "KCtrl = hyo2.kng.emu.kctrl.__main__:main",
+            "SIS = hyo2.kng.sis.__main__:main",
         ],
     },
     test_suite="tests",

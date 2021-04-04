@@ -21,7 +21,7 @@ import sys
 from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT, TOC
 from PyInstaller.compat import is_darwin, is_win
 
-from hyo2.kng.emu.sis4 import __version__ as sis_version
+from hyo2.kng.sis import __version__ as sis_version
 
 is_beta = False
 if is_beta:

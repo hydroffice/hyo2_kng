@@ -4,7 +4,7 @@ import unittest
 from hyo2.kng import name, __version__, __author__, __license__, __copyright__
 
 
-class TestOpenBST(unittest.TestCase):
+class TestKng(unittest.TestCase):
 
     def test_name(self):
         self.assertGreater(len(name), 0)
@@ -24,5 +24,5 @@ class TestOpenBST(unittest.TestCase):
 
 def suite():
     s = unittest.TestSuite()
-    s.addTests(unittest.TestLoader().loadTestsFromTestCase(TestOpenBST))
+    s.addTests(unittest.TestLoader().loadTestsFromTestCase(TestKng))
     return s
