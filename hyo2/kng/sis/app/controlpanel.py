@@ -46,8 +46,6 @@ class ControlPanel(QtWidgets.QWidget):
         self.sis_commands = QtWidgets.QGroupBox("commands")
         self.sis_commands.setStyleSheet("QGroupBox::title { color: rgb(155, 155, 155); }")
         self.vbox.addWidget(self.sis_commands)
-        self.start_sis = None
-        self.stop_sis = None
         self._make_sis_commands()
 
         self.vbox.addSpacing(12)
@@ -270,7 +268,7 @@ class ControlPanel(QtWidgets.QWidget):
             ret = self.list_files.findItems(f, QtCore.Qt.MatchExactly)
             if len(ret) > 0:
                 logger.debug('duplicated %s' % os.path.basename(f))
-                # noinspection PyCallByClass
+                # noinspection PyCallByClass,PyArgumentList
                 QtWidgets.QMessageBox.warning(self, "File Duplication",
                                               "Attempt to add a listed file:\n%s" % os.path.basename(f),
                                               QtWidgets.QMessageBox.Ok)
@@ -313,7 +311,7 @@ class ControlPanel(QtWidgets.QWidget):
     def start_emulation(self):
         if self.sis:
             if self.sis.is_alive():
-                # noinspection PyCallByClass
+                # noinspection PyCallByClass,PyArgumentList
                 QtWidgets.QMessageBox.warning(self, "Emulator running ...", "The emulator is running! Stop it",
                                               QtWidgets.QMessageBox.Ok)
                 return

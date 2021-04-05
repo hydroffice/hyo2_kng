@@ -150,6 +150,7 @@ class ReplayThread(threading.Thread):
             f.close()
             if self.verbose:
                 logger.debug("data loaded > datagrams: %s" % self.dg_counter)
+            self.files.append(fp)
 
     def _sis_5(self, f, f_sz) -> bool:
         # guardian to avoid to read beyond the EOF
