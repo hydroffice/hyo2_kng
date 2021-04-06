@@ -18,25 +18,59 @@ class ReplayThread(threading.Thread):
     then to know the process name: tasklist /fi "pid eq 2216"
     """
 
+    class Sis:
+        def __init__(self):
+            self.installation = list()
+            self.runtime = list()
+            self.ssp = list()
+            self.lists_lock = threading.Lock()
+
+    class Sis4:
+        def __init__(self):
+            self.surface_ssp_count = 0
+            self.nav_count = 0
+            self.installation_count = 0
+            self.runtime_count = 0
+            self.ssp_count = 0
+            self.svp_input_count = 0
+            self.xyz88_count = 0
+            self.range_angle78_count = 0
+            self.seabed_image89_count = 0
+            self.watercolumn_count = 0
+            self.bist_count = 0
+
+    class Sis5:
+        def __init__(self):
+            self.iip_count = 0  # Installation parameters and sensor setup
+            self.iop_count = 0  # Runtime parameters as chosen by operator
+            self.mrz_count = 0  # Multibeam (M) raw range (R) and depth(Z) datagram
+            self.spo_count = 0  # Sensor (S) data for position (PO)
+            self.svp_count = 0  # Sensor (S) data from sound velocity (V) profile (P) or CTD
+
     def __init__(self, installation: list, runtime: list, ssp: list, lists_lock: threading.Lock, files: list,
                  replay_timing: float = 1.0, port_out: int = 26103,
-                 ip_out: str = "localhost", target: Optional[object] = None, name: str = "REP", sis5: bool = False,
-                 verbose: bool = False):
+                 ip_out: str = "localhost", target: Optional[object] = None, name: str = "REP", use_sis5: bool = False,
+                 debug: bool = False):
         threading.Thread.__init__(self, target=target, name=name)
-        self.verbose = verbose
+        self.debug = debug
+
         self.port_out = port_out
         self.ip_out = ip_out
-        self.sis5 = sis5
+        self.use_sis5 = use_sis5
         self.files = files
         self._replay_timing = replay_timing
 
         self.sock_in = None
         self.sock_out = None
 
-        self.installation = installation
-        self.runtime = runtime
-        self.ssp = ssp
-        self.lists_lock = lists_lock
+        self.sis = ReplayThread.Sis()
+        self.sis.installation = installation
+        self.sis.runtime = runtime
+        self.sis.ssp = ssp
+        self.sis.lists_lock = lists_lock
+
+        self.sis4 = ReplayThread.Sis4()
+        self.sis5 = ReplayThread.Sis5()
 
         self.dg_counter = None
 
@@ -111,7 +145,7 @@ class ReplayThread(threading.Thread):
                 break
 
             fp_ext = os.path.splitext(fp)[-1].lower()
-            if self.sis5:
+            if self.use_sis5:
                 if fp_ext not in [".kmall"]:
                     logger.info("SIS 5 mode -> skipping unsupported file extension: %s" % fp)
                     continue
@@ -135,7 +169,7 @@ class ReplayThread(threading.Thread):
                     self._close_sockets()
                     break
 
-                if self.sis5:
+                if self.use_sis5:
                     break_loop = self._sis_5(f, f_sz)
                 else:
                     break_loop = self._sis_4(f, f_sz)
@@ -148,14 +182,14 @@ class ReplayThread(threading.Thread):
                     break
 
             f.close()
-            if self.verbose:
+            if self.debug:
                 logger.debug("data loaded > datagrams: %s" % self.dg_counter)
             self.files.append(fp)
 
     def _sis_5(self, f, f_sz) -> bool:
         # guardian to avoid to read beyond the EOF
         if (f.tell() + 16) > f_sz:
-            if self.verbose:
+            if self.debug:
                 logger.debug("EOF")
             return True
 
@@ -192,16 +226,23 @@ class ReplayThread(threading.Thread):
             dg_data = f.read(base.length)
 
             # Stores a few datagrams of interest in data lists:
-            with self.lists_lock:
+            with self.sis.lists_lock:
                 if base.id == b'#IIP':
-                    self.installation.clear()
-                    self.installation.append(dg_data)
-                if base.id == b'#IOP':
-                    self.runtime.clear()
-                    self.runtime.append(dg_data)
-                if base.id == b'#SVP':
-                    self.ssp.clear()
-                    self.ssp.append(dg_data)
+                    self.sis.installation.clear()
+                    self.sis.installation.append(dg_data)
+                    self.sis5.iip_count += 1
+                elif base.id == b'#IOP':
+                    self.sis.runtime.clear()
+                    self.sis.runtime.append(dg_data)
+                    self.sis5.iop_count += 1
+                elif base.id == b'#SPO':
+                    self.sis5.spo_count += 1
+                elif base.id == b'#MRZ':
+                    self.sis5.mrz_count += 1
+                elif base.id == b'#SVP':
+                    self.sis.ssp.clear()
+                    self.sis.ssp.append(dg_data)
+                    self.sis5.svp_count += 1
 
             if base.length > 65507:
                 logger.warning('skipping for length: %s %s -> datagram split not implemented' % (base.id, base.length))
@@ -216,7 +257,7 @@ class ReplayThread(threading.Thread):
     def _sis_4(self, f, f_sz) -> bool:
         # guardian to avoid to read beyond the EOF
         if (f.tell() + 16) > f_sz:
-            if self.verbose:
+            if self.debug:
                 logger.debug("EOF")
             return True
 
@@ -224,7 +265,7 @@ class ReplayThread(threading.Thread):
         ret = base.read(f, f_sz)
         if ret == KngAll.Flags.MISSING_FIRST_STX:
 
-            if self.verbose:
+            if self.debug:
                 logger.warning("troubles in reading file > SKIP")
             return True
 
@@ -267,16 +308,27 @@ class ReplayThread(threading.Thread):
             dg_data = f.read(base.length)
 
             # Stores a few datagrams of interest in data lists:
-            with self.lists_lock:
+            with self.sis.lists_lock:
                 if base.id == 0x49:
-                    self.installation.clear()
-                    self.installation.append(dg_data)
-                if base.id == 0x52:
-                    self.runtime.clear()
-                    self.runtime.append(dg_data)
-                if base.id == 0x55:
-                    self.ssp.clear()
-                    self.ssp.append(dg_data)
+                    self.sis.installation.clear()
+                    self.sis.installation.append(dg_data)
+                    self.sis4.installation_count += 1
+                elif base.id == 0x4e:
+                    self.sis4.range_angle78_count += 1
+                elif base.id == 0x50:
+                    self.sis4.nav_count += 1
+                elif base.id == 0x52:
+                    self.sis.runtime.clear()
+                    self.sis.runtime.append(dg_data)
+                    self.sis4.runtime_count += 1
+                elif base.id == 0x55:
+                    self.sis.ssp.clear()
+                    self.sis.ssp.append(dg_data)
+                    self.sis4.ssp_count += 1
+                elif base.id == 0x58:
+                    self.sis4.xyz88_count += 1
+                elif base.id == 0x6b:
+                    self.sis4.watercolumn_count += 1
 
             self.sock_out.sendto(dg_data, (self.ip_out, self.port_out))
 
@@ -284,3 +336,22 @@ class ReplayThread(threading.Thread):
                 time.sleep(self._replay_timing)
 
         return False
+
+    def info(self) -> str:
+        msg = "Transmitted datagrams:\n"
+
+        if self.use_sis5:
+            msg += "- IIP: %d\n" % self.sis5.iip_count
+            msg += "- IOP: %d\n" % self.sis5.iop_count
+            msg += "- MRZ: %d\n" % self.sis5.mrz_count
+            msg += "- SPO: %d\n" % self.sis5.spo_count
+            msg += "- SVP: %d\n" % self.sis5.svp_count
+        else:
+            msg += "- Raw: %d\n" % self.sis4.range_angle78_count
+            msg += "- Nav: %d\n" % self.sis4.nav_count
+            msg += "- Xyz: %d\n" % self.sis4.xyz88_count
+            msg += "- Ssp: %d\n" % self.sis4.ssp_count
+            msg += "- Runtime: %d\n" % self.sis4.runtime_count
+            msg += "- Wcd: %d\n" % self.sis4.watercolumn_count
+
+        return msg

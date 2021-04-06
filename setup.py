@@ -51,6 +51,7 @@ setup(
     ],
     install_requires=[
         "hyo2.abc",
+        "numpy",
         "PySide2",
         "selenium"
     ],

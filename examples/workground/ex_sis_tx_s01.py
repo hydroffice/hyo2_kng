@@ -8,8 +8,13 @@ logging.basicConfig(level=logging.DEBUG,
                     format="%(levelname)-9s %(name)s.%(funcName)s:%(lineno)d > %(message)s")
 logger = logging.getLogger(__name__)
 
-kctrl_svp_ip = '127.0.0.1'
-ktrl_svp_port = 14002  # 4001 seems to still be able to receive S01, but they are not applied
+use_sis5 = True
+
+sis_svp_ip = '127.0.0.1'
+if use_sis5:
+    sis_svp_port = 14002
+else:
+    sis_svp_port = 4001
 
 # a short profile
 depths = [0.00, 2.60, 24.60, 81.80, 203.60, 500.00, 1000.00, 2000.00, 4000.00, 12000.00]
@@ -46,6 +51,6 @@ logger.debug("S01 datagram:\n%s" % s01_message)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-sock.sendto(s01_message.encode(), (kctrl_svp_ip, ktrl_svp_port))
+sock.sendto(s01_message.encode(), (sis_svp_ip, sis_svp_port))
 sock.close()
 logger.debug("S01 datagram sent")

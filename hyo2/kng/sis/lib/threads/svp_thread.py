@@ -11,24 +11,38 @@ logger = logging.getLogger(__name__)
 
 
 class SvpThread(threading.Thread):
+
+    class Sis:
+        def __init__(self):
+            self.installation = list()
+            self.runtime = list()
+            self.ssp = list()
+            self.lists_lock = threading.Lock()
+
+            self.r20_count = 0
+            self.ssp_count = 0
+            self.snn_count = 0
+
     def __init__(self, installation: list, runtime: list, ssp: list, lists_lock: threading.Lock,
                  port_in: int = 4001, port_out: int = 26103, ip_out: str = "localhost",
-                 target: Optional[object] = None, name: str = "SVP",
-                 verbose: bool = False) -> None:
+                 target: Optional[object] = None, name: str = "SVP", use_sis5: bool = False,
+                 debug: bool = False) -> None:
         threading.Thread.__init__(self, target=target, name=name)
-        self.verbose = verbose
+        self.debug = debug
 
         self.port_in = port_in
         self.port_out = port_out
         self.ip_out = ip_out
+        self.use_sis5 = use_sis5
 
         self.sock_in = None
         self.sock_out = None
 
-        self.installation = installation
-        self.runtime = runtime
-        self.ssp = ssp
-        self.lists_lock = lists_lock
+        self.sis = SvpThread.Sis()
+        self.sis.installation = installation
+        self.sis.runtime = runtime
+        self.sis.ssp = ssp
+        self.sis.lists_lock = lists_lock
 
         self.shutdown = threading.Event()
 
@@ -66,8 +80,9 @@ class SvpThread(threading.Thread):
 
         self.sock_out = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock_out.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2 ** 16)
-        logger.debug("sock_out > buffer %sKB" %
-                     (self.sock_out.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF) / 1024))
+        if self.debug:
+            logger.debug("sock_out > buffer %sKB" %
+                         (self.sock_out.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF) / 1024))
 
     def interaction(self) -> None:
         try:
@@ -83,26 +98,248 @@ class SvpThread(threading.Thread):
         if len(data) < 6:
             logger.debug("Too short data: %s" % data)
             return
-        logger.debug("received: %s" % data)
+        if self.debug:
+            logger.debug("received: %s" % data)
 
-        ssp = self._sis_4(data)
+        if self.use_sis5:
+            self._sis_5(data)
+        else:
+            self._sis_4(data)
 
-        if ssp:
-            if self.verbose:
-                logger.debug("sending data: %s" % repr(ssp))
-            time.sleep(1.5)
+    def _sis_5(self, data) -> None:
+        if data[0:4] == "$MVS":
+            # the big assumption here is that we have received a valid Snn profile
 
-            self.sock_out.sendto(ssp, (self.ip_out, self.port_out))
-            with self.lists_lock:
-                self.ssp.append(ssp)
+            if isinstance(data, bytes):
+                data = data.decode("utf-8")
 
-            if self.verbose:
-                logger.debug("data sent")
+            if self.debug and (len(data) > 8):
+                logger.debug("received %s" % data[:6])
+            # logger.debug("received data:\n%s" % data)
+            self.sis.snn_count += 1
 
-    def _create_all_ssp(self, depths: np.ndarray, speeds: np.ndarray,
-                        date: Optional[int] = None, secs: Optional[int] = None):
-        if self.verbose:
-            logger.debug('creating a binary ssp')
+            self.send_received_profile(data)
+
+        else:
+            logger.warning('Received unknown message: %s' % data[:9])
+
+    def _sis_4(self, data) -> None:
+
+        if data[0] == '$' and data[3:6] == "R20":
+
+            if self.debug:
+                logger.debug("got IUR request!")
+            self.sis.r20_count += 1
+
+            if len(self.sis.ssp) == 0:
+                self.send_fake_profile()
+                return
+
+            self.send_latest_received_profile()
+            return
+
+        elif data[0:4] == "$MVS":
+            # the big assumption here is that we have received a valid Snn profile
+
+            if isinstance(data, bytes):
+                data = data.decode("utf-8")
+
+            if self.debug and (len(data) > 8):
+                logger.debug("received %s" % data[:6])
+            # logger.debug("received data:\n%s" % data)
+            self.sis.snn_count += 1
+
+            self.send_received_profile(data)
+
+        else:
+            logger.warning('Received unknown message: %s' % data[:9])
+
+    def send_fake_profile(self):
+        date = None
+        secs = None
+
+        # If we're running but haven't received an SVP yet, then we build a fake one to send back.
+        # Useful in testing the Server mode since the library establishes comm's before starting to serve
+        num_entries = 8
+        depths = np.zeros(num_entries)
+        speeds = np.zeros(num_entries)
+        depths[0] = 0.0
+        speeds[0] = 1537.63
+        depths[1] = 50.0
+        speeds[1] = 1537.52
+        depths[2] = 100.0
+        speeds[2] = 1529.96
+        depths[3] = 300.0
+        speeds[3] = 1521.80
+        depths[4] = 800.0
+        speeds[4] = 1486.73
+        depths[5] = 1400.0
+        speeds[5] = 1444.99
+        depths[6] = 1600.0
+        speeds[6] = 1447.25
+        depths[7] = 12000.0
+        speeds[7] = 1500.0
+        if self.debug:
+            logger.debug("made up a fake profile")  # it will send at the end of the function
+
+        if self.use_sis5:
+            ssp = self._create_sis5_ssp(depths=depths, speeds=speeds, date=date, secs=secs)
+        else:
+            ssp = self._create_sis4_ssp(depths=depths, speeds=speeds, date=date, secs=secs)
+        if self.debug:
+            logger.debug("sending data: %s" % repr(ssp))
+        time.sleep(1.5)
+        self.sock_out.sendto(ssp, (self.ip_out, self.port_out))
+        with self.sis.lists_lock:
+            self.sis.ssp.append(ssp)
+        if self.debug:
+            logger.debug("data sent")
+        self.sis.ssp_count += 1
+
+    def send_latest_received_profile(self):
+        with self.sis.lists_lock:
+
+            # First send the Installation parameters
+            if self.debug:
+                logger.debug("installation datagrams: %d" % len(self.sis.installation))
+            if len(self.sis.installation) != 0:
+                installation = self.sis.installation[-1]
+                if self.debug:
+                    logger.debug("sending installation: %s" % self.sis.installation)
+                self.sock_out.sendto(installation, (self.ip_out, self.port_out))
+                time.sleep(0.5)
+
+            # Second send the Runtime parameters
+            if self.debug:
+                logger.debug("runtime datagrams: %d" % len(self.sis.runtime))
+            if len(self.sis.runtime) != 0:
+                runtime = self.sis.runtime[-1]
+                if self.debug:
+                    logger.debug("sending runtime: %s" % self.sis.runtime)
+                self.sock_out.sendto(runtime, (self.ip_out, self.port_out))
+                time.sleep(0.5)
+
+            # Third send the SVP ...
+            if self.debug:
+                logger.debug("ssp datagrams: %d" % len(self.sis.ssp))
+            if len(self.sis.ssp) != 0:
+
+                if self.debug:
+                    logger.debug("sending svp")
+
+                time.sleep(1.5)
+                ssp = self.sis.ssp[-1]
+                self.sock_out.sendto(ssp, (self.ip_out, self.port_out))
+                self.sis.ssp_count += 1
+                return
+            else:
+                logger.warning('No profiles received. Try again!')
+
+    def send_received_profile(self, data):
+        date = None
+        secs = None
+        depths = None
+        speeds = None
+        count = 0
+        header = False
+
+        for row in data.splitlines():
+
+            if count == 0:  # first line
+                if "CALC" in row:
+                    logger.warning("HYPACK profile")
+                    return
+
+            num_fields = len(row.split(","))
+            if num_fields == 12:  # header
+
+                fields = row.split(",")
+                num_entries = int(fields[2])
+                timestamp = datetime.datetime.strptime(fields[3], "%H%M%S")
+                secs = (timestamp - timestamp.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+                datestamp = datetime.datetime(day=int(fields[4]), month=int(fields[5]), year=int(fields[6]))
+                date = int(datestamp.strftime("%Y%m%d"))
+                depths = np.zeros(num_entries)
+                speeds = np.zeros(num_entries)
+                depths[count] = fields[7]
+                speeds[count] = fields[8]
+                header = True
+
+            elif num_fields == 5:
+
+                if not header:
+                    logger.warning("unable to parse received header")
+                    return
+                depths[count] = row.split(",")[0]
+                speeds[count] = row.split(",")[1]
+
+            count += 1
+
+        if self.use_sis5:
+            ssp = self._create_sis5_ssp(depths=depths, speeds=speeds, date=date, secs=secs)
+        else:
+            ssp = self._create_sis4_ssp(depths=depths, speeds=speeds, date=date, secs=secs)
+        if self.debug:
+            logger.debug("sending data: %s" % repr(ssp))
+        time.sleep(1.5)
+        self.sock_out.sendto(ssp, (self.ip_out, self.port_out))
+        with self.sis.lists_lock:
+            self.sis.ssp.append(ssp)
+        if self.debug:
+            logger.debug("data sent")
+        self.sis.ssp_count += 1
+
+    def _create_sis5_ssp(self, depths: np.ndarray, speeds: np.ndarray,
+                         date: Optional[int] = None, secs: Optional[int] = None) -> bytes:
+        if self.debug:
+            logger.debug('creating a SIS5 binary ssp')
+
+        common_hdr_fmt = "<I4cBBHII"
+        dg_hdr_fmt = "<2H4BIdd"
+        dg_pnt_fmt = "<2fI2f"
+        common_ftr_fmt = "<I"
+
+        dg_date = 334582200
+        if date:
+            try:
+                date_object = datetime.datetime.strptime(date, "%Y%m%d")
+                dg_date = int(date_object.timestamp())
+                if secs:
+                    dg_date += secs
+            except Exception as e:
+                logger.warning('Unable to interpret the timestamp: %s and %s -> %s'
+                               % (date, secs, e))
+
+        dg_length = struct.calcsize(common_hdr_fmt) + struct.calcsize(dg_hdr_fmt) + \
+                    depths.size * struct.calcsize(dg_pnt_fmt) + struct.calcsize(common_ftr_fmt)
+
+        # -- header                        length,       datagram id,
+        svp = struct.pack(common_hdr_fmt, dg_length, b'#', b'S', b'V', b'P',
+                          # version, system id, echosounder id, time sec, nanosec
+                          1, 1, 302, dg_date, 0)
+
+        # logger.debug("%s, %s, %s" % (type(struct.calcsize(dg_hdr_fmt)), type(int(depths.size)), type(dg_date)))
+        # -- dg header                      bytes common part,      nr samples,      sensor format,
+        svp += struct.pack(dg_hdr_fmt, struct.calcsize(dg_hdr_fmt), int(depths.size),
+                           ord('S'), ord('0'), ord('0'), ord(' '),
+                           # time sec, latitude, longitude
+                           dg_date, 43.13555, -70.9395
+                           )
+
+        # -- dg points
+        for count in range(depths.size):
+            #                              depth,         sound speed, pad, temp, sal
+            svp += struct.pack(dg_pnt_fmt, depths[count], speeds[count], 0, 0.0, 0.0)
+
+        # -- footer
+        svp += struct.pack(common_ftr_fmt, dg_length)
+
+        return svp
+
+    def _create_sis4_ssp(self, depths: np.ndarray, speeds: np.ndarray,
+                         date: Optional[int] = None, secs: Optional[int] = None) -> bytes:
+        if self.debug:
+            logger.debug('creating a SIS4 binary ssp')
 
         d_res = 1  # depth resolution
         # TODO: improve it with the received metadata
@@ -133,116 +370,10 @@ class SvpThread(threading.Thread):
 
         return svp
 
-    def _sis_4(self, data):
-        date = None
-        secs = None
-
-        if data[0] == '$' and data[3:6] == "R20":
-
-            logger.debug("got IUR request!")
-
-            with self.lists_lock:
-
-                # First send the Installation parameters
-                logger.debug("installation datagrams: %d" % len(self.installation))
-                if len(self.installation) != 0:
-                    installation = self.installation[-1]
-                    if self.verbose:
-                        logger.debug("sending installation: %s" % self.installation)
-                    self.sock_out.sendto(installation, (self.ip_out, self.port_out))
-                    time.sleep(0.5)
-
-                # Second send the Runtime parameters
-                logger.debug("runtime datagrams: %d" % len(self.runtime))
-                if len(self.runtime) != 0:
-                    runtime = self.runtime[-1]
-                    if self.verbose:
-                        logger.debug("sending runtime: %s" % self.runtime)
-                    self.sock_out.sendto(runtime, (self.ip_out, self.port_out))
-                    time.sleep(0.5)
-
-                # Third send the SVP ...
-                logger.debug("ssp datagrams: %d" % len(self.ssp))
-                if len(self.ssp) != 0:
-
-                    if self.verbose:
-                        logger.debug("sending svp")
-
-                    time.sleep(1.5)
-                    ssp = self.ssp[-1]
-                    self.sock_out.sendto(ssp, (self.ip_out, self.port_out))
-                    return
-
-            # If we're running but haven't received an SVP yet, then we build a fake one to send back.
-            # Useful in testing the Server mode since the library establishes comm's before starting to serve
-            num_entries = 8
-            depths = np.zeros(num_entries)
-            speeds = np.zeros(num_entries)
-            depths[0] = 0.0
-            speeds[0] = 1537.63
-            depths[1] = 50.0
-            speeds[1] = 1537.52
-            depths[2] = 100.0
-            speeds[2] = 1529.96
-            depths[3] = 300.0
-            speeds[3] = 1521.80
-            depths[4] = 800.0
-            speeds[4] = 1486.73
-            depths[5] = 1400.0
-            speeds[5] = 1444.99
-            depths[6] = 1600.0
-            speeds[6] = 1447.25
-            depths[7] = 12000.0
-            speeds[7] = 1500.0
-            if self.verbose:
-                logger.debug("making up a fake profile")  # it will send at the end of the function
-
-        else:
-            # the big assumption here is that we received a valid Snn profile
-
-            if isinstance(data, bytes):
-                data = data.decode("utf-8")
-
-            if self.verbose and (len(data) > 8):
-                logger.debug("received %s" % data[:6])
-            # logger.debug("received data:\n%s" % data)
-
-            depths = None
-            speeds = None
-            count = 0
-            header = False
-
-            for l in data.splitlines():
-
-                if count == 0:  # first line
-                    if "CALC" in l:
-                        logger.warning("HYPACK profile")
-                        return
-
-                num_fields = len(l.split(","))
-                if num_fields == 12:  # header
-
-                    fields = l.split(",")
-                    num_entries = int(fields[2])
-                    timestamp = datetime.datetime.strptime(fields[3], "%H%M%S")
-                    secs = (timestamp - timestamp.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
-                    datestamp = datetime.datetime(day=int(fields[4]), month=int(fields[5]), year=int(fields[6]))
-                    date = int(datestamp.strftime("%Y%m%d"))
-                    depths = np.zeros(num_entries)
-                    speeds = np.zeros(num_entries)
-                    depths[count] = fields[7]
-                    speeds[count] = fields[8]
-                    header = True
-
-                elif num_fields == 5:
-
-                    if not header:
-                        logger.warning("unable to parse received header")
-                        return
-                    depths[count] = l.split(",")[0]
-                    speeds[count] = l.split(",")[1]
-
-                count += 1
-
-        ssp = self._create_all_ssp(depths=depths, speeds=speeds, date=date, secs=secs)
-        return ssp
+    def info(self) -> str:
+        msg = "Received Datagrams:\n"
+        msg += "- R20: %d\n" % self.sis.r20_count
+        msg += "- Snn: %d\n" % self.sis.snn_count
+        msg += "Reacted Datagrams:\n"
+        msg += "- ssp: %d\n" % self.sis.ssp_count
+        return msg

@@ -17,8 +17,8 @@ class MainWin(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self._check_web_page()
-        self._check_latest_release()
+        # self._check_web_page()
+        # self._check_latest_release()
 
         self.name = app_info.app_name
         self.version = app_info.app_version

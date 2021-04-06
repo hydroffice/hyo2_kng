@@ -16,7 +16,7 @@ class TestSisProcess(unittest.TestCase):
         freeze_support()
 
         parent_conn, child_conn = Pipe()
-        p = SisProcess(conn=child_conn, sis5=False)
+        p = SisProcess(conn=child_conn, use_sis5=False)
 
         p.start()
         self.assertTrue(p.is_alive())
@@ -31,7 +31,7 @@ class TestSisProcess(unittest.TestCase):
         freeze_support()
 
         parent_conn, child_conn = Pipe()
-        p = SisProcess(conn=child_conn, sis5=True)
+        p = SisProcess(conn=child_conn, use_sis5=True)
 
         p.start()
         self.assertTrue(p.is_alive())
@@ -46,7 +46,7 @@ class TestSisProcess(unittest.TestCase):
         freeze_support()
 
         parent_conn, child_conn = Pipe()
-        p = SisProcess(conn=child_conn, sis5=False)
+        p = SisProcess(conn=child_conn, use_sis5=False)
 
         p.set_files(self.test_files)
 
@@ -63,7 +63,7 @@ class TestSisProcess(unittest.TestCase):
         freeze_support()
 
         parent_conn, child_conn = Pipe()
-        p = SisProcess(conn=child_conn, sis5=True)
+        p = SisProcess(conn=child_conn, use_sis5=True)
 
         p.set_files(self.test_files)
 

@@ -1,10 +1,7 @@
 import logging
 import os
-from multiprocessing import Pipe
-from threading import Timer
 from PySide2 import QtCore, QtGui, QtWidgets
-from hyo2.kng.sis.lib.sis_process import SisProcess
-from hyo2.kng.sis.app.infoviewer import InfoViewerDialog
+from hyo2.kng.sis.lib.sis import Sis
 from hyo2.abc.app.qt_progress import QtProgress
 
 logger = logging.getLogger(__name__)
@@ -38,29 +35,49 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.sis_inputs = QtWidgets.QGroupBox("inputs")
         self.sis_inputs.setStyleSheet("QGroupBox::title { color: rgb(155, 155, 155); }")
+        self.sis_inputs.setMaximumHeight(140)
         self.vbox.addWidget(self.sis_inputs)
         self.list_files = None
         self._make_sis_inputs()
-        self.set_sis_4()  # to also clear the file list
 
         self.sis_commands = QtWidgets.QGroupBox("commands")
         self.sis_commands.setStyleSheet("QGroupBox::title { color: rgb(155, 155, 155); }")
         self.vbox.addWidget(self.sis_commands)
         self._make_sis_commands()
 
-        self.vbox.addSpacing(12)
+        # info viewer
+        self.viewer = QtWidgets.QTextBrowser()
+        self.viewer.resize(QtCore.QSize(320, 40))
+        self.viewer.setTextColor(QtGui.QColor("#4682b4"))
+        self.viewer.ensureCursorVisible()
+        # create a monospace font
+        font = QtGui.QFont("Courier New")
+        font.setStyleHint(QtGui.QFont.TypeWriter)
+        font.setFixedPitch(True)
+        font.setPointSize(9)
+        self.viewer.document().setDefaultFont(font)
+        # set the tab size
+        metrics = QtGui.QFontMetrics(font)
+        # noinspection PyArgumentList
+        self.viewer.setTabStopWidth(3 * metrics.width(' '))
+        self.viewer.setReadOnly(True)
+        self.vbox.addWidget(self.viewer)
+
+        self.vbox.addSpacing(6)
         comments = QtWidgets.QLabel("<i>Comments and suggestions:</i> "
                                     "<a href='mailto:gmasetti@ccom.unh.edu'>gmasetti@ccom.unh.edu</a>")
         comments.setOpenExternalLinks(True)
         self.vbox.addWidget(comments)
 
-        # info viewer
-        self.info_viewer = InfoViewerDialog(self)
+        self.set_sis_4()  # to also clear the file list
+        self.enable_commands(True)
 
-        # processing pipe
+        timer = QtCore.QTimer(self)
+        # noinspection PyUnresolvedReferences
+        timer.timeout.connect(self.update_gui)
+        # noinspection PyArgumentList
+        timer.start(1500)
 
-        self.conn = None
-        self.child_conn = None
         self._active = False
         self._replay_timing = 1.0
 
@@ -177,6 +194,13 @@ class ControlPanel(QtWidgets.QWidget):
         self.set_input_port.setEnabled(enable)
         self.set_output_ip.setEnabled(enable)
         self.set_output_port.setEnabled(enable)
+        self.set_verbose.setEnabled(enable)
+        self.button_add_files.setEnabled(enable)
+        self.button_clear_files.setEnabled(enable)
+        self.button_start_sis.setEnabled(enable)
+        self.button_send_fake.setDisabled(enable)
+        self.button_send_latest.setDisabled(enable)
+        self.button_stop_sis.setDisabled(enable)
 
     def _make_sis_inputs(self):
 
@@ -184,25 +208,26 @@ class ControlPanel(QtWidgets.QWidget):
         self.sis_inputs.setLayout(vbox)
 
         self.list_files = QtWidgets.QListWidget()
+        self.list_files.setFixedHeight(40)
         vbox.addWidget(self.list_files)
 
         hbox = QtWidgets.QHBoxLayout()
         vbox.addLayout(hbox)
         hbox.addStretch()
 
-        button_add_files = QtWidgets.QPushButton()
-        hbox.addWidget(button_add_files)
-        button_add_files.setText("Add files")
-        button_add_files.setToolTip('Add files as data source for emulation')
+        self.button_add_files = QtWidgets.QPushButton()
+        hbox.addWidget(self.button_add_files)
+        self.button_add_files.setText("Add files")
+        self.button_add_files.setToolTip('Add files as data source for emulation')
         # noinspection PyUnresolvedReferences
-        button_add_files.clicked.connect(self._add_source_files)
+        self.button_add_files.clicked.connect(self._add_source_files)
 
-        button_clear_files = QtWidgets.QPushButton()
-        hbox.addWidget(button_clear_files)
-        button_clear_files.setText("Clear files")
-        button_clear_files.setToolTip('Clear the file list')
+        self.button_clear_files = QtWidgets.QPushButton()
+        hbox.addWidget(self.button_clear_files)
+        self.button_clear_files.setText("Clear files")
+        self.button_clear_files.setToolTip('Clear the file list')
         # noinspection PyUnresolvedReferences
-        button_clear_files.clicked.connect(self._clear_source_files)
+        self.button_clear_files.clicked.connect(self._clear_source_files)
 
         hbox.addStretch()
 
@@ -216,19 +241,33 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         hbox.addStretch()
 
-        button_start_sis = QtWidgets.QPushButton()
-        hbox.addWidget(button_start_sis)
-        button_start_sis.setText("Start SIS")
-        button_start_sis.setToolTip('Start emulation using defined settings')
+        self.button_start_sis = QtWidgets.QPushButton()
+        hbox.addWidget(self.button_start_sis)
+        self.button_start_sis.setText("Start SIS")
+        self.button_start_sis.setToolTip('Start emulation using defined settings')
         # noinspection PyUnresolvedReferences
-        button_start_sis.clicked.connect(self.start_emulation)
+        self.button_start_sis.clicked.connect(self.start_emulation)
+        
+        self.button_send_fake = QtWidgets.QPushButton()
+        hbox.addWidget(self.button_send_fake)
+        self.button_send_fake.setText("Send fake SSP")
+        self.button_send_fake.setToolTip('Send a fake sound speed profile')
+        # noinspection PyUnresolvedReferences
+        self.button_send_fake.clicked.connect(self.send_fake)
+        
+        self.button_send_latest = QtWidgets.QPushButton()
+        hbox.addWidget(self.button_send_latest)
+        self.button_send_latest.setText("Send latest SSP")
+        self.button_send_latest.setToolTip('Send the latest received sound speed profile')
+        # noinspection PyUnresolvedReferences
+        self.button_send_latest.clicked.connect(self.send_latest)
 
-        button_stop_sis = QtWidgets.QPushButton()
-        hbox.addWidget(button_stop_sis)
-        button_stop_sis.setText("Stop SIS")
-        button_stop_sis.setToolTip('Stop emulation')
+        self.button_stop_sis = QtWidgets.QPushButton()
+        hbox.addWidget(self.button_stop_sis)
+        self.button_stop_sis.setText("Stop SIS")
+        self.button_stop_sis.setToolTip('Stop emulation')
         # noinspection PyUnresolvedReferences
-        button_stop_sis.clicked.connect(self.stop_emulation)
+        self.button_stop_sis.clicked.connect(self.stop_emulation)
 
         hbox.addStretch()
 
@@ -281,52 +320,17 @@ class ControlPanel(QtWidgets.QWidget):
         logger.debug('clear source files')
         self.list_files.clear()
 
-    def monitoring(self):
-
-        try:
-            self.enable_commands(enable=False)
-
-            if self.conn is None:
-                self.enable_commands(enable=True)
-                return
-
-            if self.conn.poll():
-
-                data = self.conn.recv()
-
-                if isinstance(data, str):
-                    self.info_viewer.append(data)
-                    # logger.debug("%s" % data)
-
-            if not self._active:
-                self.enable_commands(enable=True)
-                return
-
-            Timer(0.5, self.monitoring).start()
-
-        except Exception as e:
-            logger.warning(e)
-            self.enable_commands(enable=False)
-
     def start_emulation(self):
-        if self.sis:
-            if self.sis.is_alive():
-                # noinspection PyCallByClass,PyArgumentList
-                QtWidgets.QMessageBox.warning(self, "Emulator running ...", "The emulator is running! Stop it",
-                                              QtWidgets.QMessageBox.Ok)
-                return
-
-        self.info_viewer.viewer.verticalScrollBar().setValue(self.info_viewer.viewer.verticalScrollBar().maximum())
-        self.info_viewer.show()
+        self.viewer.clear()
+        self.enable_commands(enable=False)
 
         # create a new process
         input_port = int(self.set_input_port.text())
         output_ip = self.set_output_ip.text()
         output_port = int(self.set_output_port.text())
-        self.conn, self.child_conn = Pipe()
-        self.sis = SisProcess(conn=self.child_conn, port_in=input_port, port_out=output_port, ip_out=output_ip,
-                              replay_timing=self._replay_timing, sis5=self.sis_5.isChecked(),
-                              verbose=self.set_verbose.isChecked())
+        self.sis = Sis(port_in=input_port, port_out=output_port, ip_out=output_ip,
+                       replay_timing=self._replay_timing, use_sis5=self.sis_5.isChecked(),
+                       debug=self.set_verbose.isChecked())
         logger.debug('created new simulator')
 
         file_list = list()
@@ -344,9 +348,6 @@ class ControlPanel(QtWidgets.QWidget):
 
         self.sis.start()
 
-        self._active = True
-        self.monitoring()
-
     def stop_emulation(self):
         logger.debug("stop SIS")
         if self.sis:
@@ -356,13 +357,19 @@ class ControlPanel(QtWidgets.QWidget):
             self.sis.stop()
 
             progress.update(value=30)
-            self.sis.join()
             self.sis = None
 
             progress.end()
 
-        self._active = False
-        self.info_viewer.hide()
+        self.enable_commands(enable=True)
+
+    def send_fake(self):
+        if self.sis:
+            self.sis.send_fake_profile()
+
+    def send_latest(self):
+        if self.sis:
+            self.sis.send_latest_profile()
 
     def on_replay_timing(self):
         value = self.set_timing.value()
@@ -383,6 +390,12 @@ class ControlPanel(QtWidgets.QWidget):
             self._replay_timing = 0.0001
 
         if self.sis is not None:
-            self.conn.send(self._replay_timing)
+            self.sis.set_timing(self._replay_timing)
 
         logger.debug("changed timing: %.4f" % self._replay_timing)
+
+    def update_gui(self):
+        if self.sis is None:
+            self.viewer.clear()
+            return
+        self.viewer.setText(self.sis.info())
