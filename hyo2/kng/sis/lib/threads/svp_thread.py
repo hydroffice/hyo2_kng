@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class SvpThread(threading.Thread):
-
     class Sis:
         def __init__(self):
             self.installation = list()
@@ -22,6 +21,7 @@ class SvpThread(threading.Thread):
             self.r20_count = 0
             self.ssp_count = 0
             self.snn_count = 0
+            self.k454_count = 0
 
     def __init__(self, installation: list, runtime: list, ssp: list, lists_lock: threading.Lock,
                  port_in: int = 4001, port_out: int = 26103, ip_out: str = "localhost",
@@ -99,7 +99,7 @@ class SvpThread(threading.Thread):
             logger.debug("Too short data: %s" % data)
             return
         if self.debug:
-            logger.debug("received: %s" % data)
+            logger.debug("received: %s" % data.strip())
 
         if self.use_sis5:
             self._sis_5(data)
@@ -107,7 +107,21 @@ class SvpThread(threading.Thread):
             self._sis_4(data)
 
     def _sis_5(self, data) -> None:
-        if data[0:4] == "$MVS":
+
+        if data[0:9] == "$KSIS,454":
+
+            if self.debug:
+                logger.debug("got KSIS,454 request!")
+            self.sis.k454_count += 1
+
+            if len(self.sis.ssp) == 0:
+                self.send_fake_profile()
+                return
+
+            self.send_latest_received_profile()
+            return
+
+        elif data[0:4] == "$MVS":
             # the big assumption here is that we have received a valid Snn profile
 
             if isinstance(data, bytes):
@@ -310,8 +324,8 @@ class SvpThread(threading.Thread):
                 logger.warning('Unable to interpret the timestamp: %s and %s -> %s'
                                % (date, secs, e))
 
-        dg_length = struct.calcsize(common_hdr_fmt) + struct.calcsize(dg_hdr_fmt) + \
-                    depths.size * struct.calcsize(dg_pnt_fmt) + struct.calcsize(common_ftr_fmt)
+        dg_length = struct.calcsize(common_hdr_fmt) + struct.calcsize(dg_hdr_fmt) + depths.size * struct.calcsize(
+            dg_pnt_fmt) + struct.calcsize(common_ftr_fmt)
 
         # -- header                        length,       datagram id,
         svp = struct.pack(common_hdr_fmt, dg_length, b'#', b'S', b'V', b'P',
@@ -373,6 +387,7 @@ class SvpThread(threading.Thread):
     def info(self) -> str:
         msg = "Received Datagrams:\n"
         msg += "- R20: %d\n" % self.sis.r20_count
+        msg += "- K454: %d\n" % self.sis.k454_count
         msg += "- Snn: %d\n" % self.sis.snn_count
         msg += "Reacted Datagrams:\n"
         msg += "- ssp: %d\n" % self.sis.ssp_count
