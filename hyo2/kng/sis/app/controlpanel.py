@@ -208,7 +208,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.sis_inputs.setLayout(vbox)
 
         self.list_files = QtWidgets.QListWidget()
-        self.list_files.setFixedHeight(40)
+        self.list_files.setFixedHeight(60)
         vbox.addWidget(self.list_files)
 
         hbox = QtWidgets.QHBoxLayout()

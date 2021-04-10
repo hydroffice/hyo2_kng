@@ -108,7 +108,7 @@ class SvpThread(threading.Thread):
 
     def _sis_5(self, data) -> None:
 
-        if data[0:9] == "$KSIS,454":
+        if data[0:10] == "$KSSIS,454":
 
             if self.debug:
                 logger.debug("got KSIS,454 request!")
