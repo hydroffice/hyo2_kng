@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 set_logging(ns_list=["hyo2.kng", ])
 
 
-def sis_gui():
+def gui():
     """create the main windows and the event loop"""
     app = QtWidgets.QApplication(sys.argv)
 

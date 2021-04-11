@@ -14,6 +14,7 @@
 #   . copy QtWebEngineProcess.exe in the root
 #   . copy in PySide2 both "resources" and "translations" folder
 #
+# Uploading to BitBucket: curl -s -v -u giumas:password -X POST https://api.bitbucket.org/2.0/repositories/hydroffice/hyo_kng/downloads -F files=@SIS.1.1.0.zip
 
 from datetime import datetime
 import os
@@ -108,7 +109,7 @@ if is_darwin:
 
 a = Analysis(['SIS.py'],
              pathex=[],
-             hiddenimports=["PIL", "typing"],
+             hiddenimports=["PIL", "typing", "scipy._lib.messagestream", "cftime._cftime", "PySide2.QtPrintSupport"],
              excludes=["IPython", "PyQt4", "PyQt5", "pandas", "sphinx", "sphinx_rtd_theme",
                        "OpenGL_accelerate", "FixTk", "tcl", "tk", "_tkinter", "tkinter", "Tkinter",
                        "wx"],

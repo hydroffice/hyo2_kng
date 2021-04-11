@@ -1,3 +1,3 @@
-from hyo2.ssm_sis.gui import gui
+from hyo2.kng.sis.app.gui import gui
 
 gui()
