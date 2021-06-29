@@ -96,9 +96,6 @@ def collect_folder_data(input_data_folder: str, relative_output_folder: str):
     return data_toc
 
 
-share_folder = os.path.join(python_path(), "Library", "share")
-output_folder = os.path.join("Library", "share")
-pyproj_data = collect_folder_data(input_data_folder=share_folder, relative_output_folder=output_folder)
 pyside2_data = collect_pkg_data('PySide2')
 abc_data = collect_pkg_data('hyo2.abc')
 kng_data = collect_pkg_data('hyo2.kng')
@@ -109,7 +106,7 @@ if is_darwin:
 
 a = Analysis(['SIS.py'],
              pathex=[],
-             hiddenimports=["PIL", "typing", "scipy._lib.messagestream", "cftime._cftime", "PySide2.QtPrintSupport"],
+             hiddenimports=["PIL", "typing", "cftime._cftime", "PySide2.QtPrintSupport"],
              excludes=["IPython", "PyQt4", "PyQt5", "pandas", "sphinx", "sphinx_rtd_theme",
                        "OpenGL_accelerate", "FixTk", "tcl", "tk", "_tkinter", "tkinter", "Tkinter",
                        "wx"],
@@ -130,7 +127,6 @@ coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
                a.datas,
-               pyproj_data,
                pyside2_data,
                abc_data,
                kng_data,
