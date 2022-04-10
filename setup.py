@@ -52,8 +52,7 @@ setup(
     install_requires=[
         "hyo2.abc",
         "numpy",
-        "PySide2",
-        "selenium"
+        # "PySide2"
     ],
     python_requires='>=3.5',
     entry_points={
@@ -79,6 +78,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Scientific/Engineering :: GIS",
     ],
     keywords="hydrography ocean mapping acoustic data format emulator",
