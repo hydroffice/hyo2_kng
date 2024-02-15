@@ -41,22 +41,25 @@ class ReplayThread(threading.Thread):
 
     class Sis5:
         def __init__(self):
-            self.iip_count = 0  # Installation parameters and sensor setup
-            self.iop_count = 0  # Runtime parameters as chosen by operator
+            self.iip_count = 0  # Installation parameters and sensor setup datagram
+            self.iop_count = 0  # Runtime parameters as chosen by operator datagram
             self.mrz_count = 0  # Multibeam (M) raw range (R) and depth(Z) datagram
-            self.spo_count = 0  # Sensor (S) data for position (PO)
-            self.svp_count = 0  # Sensor (S) data from sound velocity (V) profile (P) or CTD
+            self.spo_count = 0  # Sensor (S) data for position (PO) datagram
+            self.ssm_count = 0  # Sound Speed Manager (SSM) datagram
+            self.svp_count = 0  # Sensor (S) data from sound velocity (V) profile (P) or CTD datagram
 
     def __init__(self, installation: list, runtime: list, ssp: list, lists_lock: threading.Lock, files: list,
                  replay_timing: float = 1.0, port_out: int = 26103,
                  ip_out: str = "localhost", target: Optional[object] = None, name: str = "REP", use_sis5: bool = False,
-                 debug: bool = False):
+                 debug: bool = False, reply_ssm: bool = True, reply_mrz: bool = True):
         threading.Thread.__init__(self, target=target, name=name)
         self.debug = debug
 
         self.port_out = port_out
         self.ip_out = ip_out
         self.use_sis5 = use_sis5
+        self.reply_ssm = reply_ssm
+        self.reply_mrz = reply_mrz
         self.files = files
         self._replay_timing = replay_timing
 
@@ -219,7 +222,15 @@ class ReplayThread(threading.Thread):
         # - b'#SPO': 'Sensor (S) data for position (PO)'
         # - b'#MRZ': 'Multibeam (M) raw range (R) and depth(Z) datagram'
         # - b'#SVP': 'Sensor (S) data from sound velocity (V) profile (P) or CTD'
-        if base.id in [b'#IIP', b'#IOP', b'#SPO', b'#MRZ', b'#SVP']:
+        # - b'#SSM': 'Sound (S) Speed (S) Manager (M)'
+        filtered_datagrams = [b'#IIP', b'#IOP', b'#SVP']
+        if self.reply_mrz:
+            filtered_datagrams.append(b'#SPO')
+            filtered_datagrams.append(b'#MRZ')
+        if self.reply_ssm:
+            filtered_datagrams.append(b'#SSM')
+
+        if base.id in filtered_datagrams:
             logger.debug("%s > sending dg %s (length: %sB)"
                          % (base.dg_time, base.id, base.length))
             f.seek(-base.length, 1)
@@ -243,6 +254,8 @@ class ReplayThread(threading.Thread):
                     self.sis.ssp.clear()
                     self.sis.ssp.append(dg_data)
                     self.sis5.svp_count += 1
+                elif base.id == b'#SSM':
+                    self.sis5.ssm_count += 1
 
             if base.length > 65507:
                 logger.warning('skipping for length: %s %s -> datagram split not implemented' % (base.id, base.length))
@@ -345,6 +358,7 @@ class ReplayThread(threading.Thread):
             msg += "- IOP: %d\n" % self.sis5.iop_count
             msg += "- MRZ: %d\n" % self.sis5.mrz_count
             msg += "- SPO: %d\n" % self.sis5.spo_count
+            msg += "- SSM: %d\n" % self.sis5.ssm_count
             msg += "- SVP: %d\n" % self.sis5.svp_count
         else:
             msg += "- Raw: %d\n" % self.sis4.range_angle78_count

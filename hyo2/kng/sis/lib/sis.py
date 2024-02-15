@@ -1,8 +1,9 @@
 import logging
 import os
 import threading
-from hyo2.kng.sis.lib.threads.svp_thread import SvpThread
+
 from hyo2.kng.sis.lib.threads.replay_thread import ReplayThread
+from hyo2.kng.sis.lib.threads.svp_thread import SvpThread
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,7 @@ class Sis:
     """SIS simulator"""
 
     def __init__(self, replay_timing=1.0, port_in=4001, port_out=26103, ip_out="localhost",
-                 use_sis5: bool = False, debug=False):
+                 use_sis5: bool = False, debug=False, reply_ssm: bool = True, reply_mrz: bool = True):
         self.verbose = debug
         self._replay_timing = replay_timing
 
@@ -20,6 +21,8 @@ class Sis:
         self.port_out = port_out
         self.ip_out = ip_out
         self.use_sis5 = use_sis5
+        self.reply_ssm = reply_ssm
+        self.reply_mrz = reply_mrz
 
         # threads
         self.t_svp = None
@@ -62,27 +65,32 @@ class Sis:
 
         lists_lock = threading.Lock()
 
-        self.t_svp = SvpThread(runtime=self.runtime,
-                               installation=self.installation,
-                               ssp=self.ssp,
-                               lists_lock=lists_lock,
-                               port_in=self.port_in,
-                               port_out=self.port_out,
-                               ip_out=self.ip_out,
-                               debug=self.verbose,
-                               use_sis5=self.use_sis5)
+        self.t_svp = SvpThread(
+            runtime=self.runtime,
+            installation=self.installation,
+            ssp=self.ssp,
+            lists_lock=lists_lock,
+            port_in=self.port_in,
+            port_out=self.port_out,
+            ip_out=self.ip_out,
+            debug=self.verbose,
+            use_sis5=self.use_sis5)
         self.t_svp.start()
 
-        self.t_replay = ReplayThread(runtime=self.runtime,
-                                     installation=self.installation,
-                                     ssp=self.ssp,
-                                     lists_lock=lists_lock,
-                                     files=self.files,
-                                     replay_timing=self._replay_timing,
-                                     port_out=self.port_out,
-                                     ip_out=self.ip_out,
-                                     use_sis5=self.use_sis5,
-                                     debug=self.verbose)
+        self.t_replay = ReplayThread(
+            runtime=self.runtime,
+            installation=self.installation,
+            ssp=self.ssp,
+            lists_lock=lists_lock,
+            files=self.files,
+            replay_timing=self._replay_timing,
+            port_out=self.port_out,
+            ip_out=self.ip_out,
+            use_sis5=self.use_sis5,
+            debug=self.verbose,
+            reply_ssm=self.reply_ssm,
+            reply_mrz=self.reply_mrz
+        )
         self.t_replay.start()
 
     def set_timing(self, timing: float):

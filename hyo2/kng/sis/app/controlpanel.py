@@ -69,7 +69,7 @@ class ControlPanel(QtWidgets.QWidget):
         comments.setOpenExternalLinks(True)
         self.vbox.addWidget(comments)
 
-        self.set_sis_4()  # to also clear the file list
+        self.set_sis_5()  # to also clear the file list
         self.enable_commands(True)
 
         timer = QtCore.QTimer(self)
@@ -92,18 +92,18 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_input_port = QtWidgets.QLabel("SIS Version:")
         hbox.addWidget(text_input_port)
-        text_input_port.setMinimumWidth(80)
+        text_input_port.setMinimumWidth(100)
         self.sis_4 = QtWidgets.QRadioButton()
         hbox.addWidget(self.sis_4)
         self.sis_4.setText("SIS4")
         self.sis_4.setToolTip('Settings for SIS 4')
-        self.sis_4.setChecked(True)
         # noinspection PyUnresolvedReferences
         self.sis_4.clicked.connect(self.set_sis_4)
         self.sis_5 = QtWidgets.QRadioButton()
         hbox.addWidget(self.sis_5)
         self.sis_5.setText("SIS5")
         self.sis_5.setToolTip('Settings for SIS 5')
+        self.sis_5.setChecked(True)
         # noinspection PyUnresolvedReferences
         self.sis_5.clicked.connect(self.set_sis_5)
         hbox.addStretch()
@@ -115,7 +115,7 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_input_port = QtWidgets.QLabel("Input port:")
         hbox.addWidget(text_input_port)
-        text_input_port.setMinimumWidth(80)
+        text_input_port.setMinimumWidth(100)
         self.set_input_port = QtWidgets.QLineEdit("")
         hbox.addWidget(self.set_input_port)
         validator = QtGui.QIntValidator(0, 65535)
@@ -126,7 +126,7 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_output_ip = QtWidgets.QLabel("Output IP:")
         hbox.addWidget(text_output_ip)
-        text_output_ip.setMinimumWidth(80)
+        text_output_ip.setMinimumWidth(100)
         self.set_output_ip = QtWidgets.QLineEdit("")
         hbox.addWidget(self.set_output_ip)
         octet = "(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])"
@@ -139,7 +139,7 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_output_port = QtWidgets.QLabel("Output port:")
         hbox.addWidget(text_output_port)
-        text_output_port.setMinimumWidth(80)
+        text_output_port.setMinimumWidth(100)
         self.set_output_port = QtWidgets.QLineEdit("")
         hbox.addWidget(self.set_output_port)
         validator = QtGui.QIntValidator(0, 65535)
@@ -152,7 +152,7 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_timing = QtWidgets.QLabel("Timing:")
         hbox.addWidget(text_timing)
-        text_timing.setMinimumWidth(80)
+        text_timing.setMinimumWidth(100)
         self.set_timing = QtWidgets.QSlider()
         # noinspection PyUnresolvedReferences
         self.set_timing.setOrientation(QtCore.Qt.Horizontal)
@@ -170,10 +170,32 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_verbose = QtWidgets.QLabel("Verbose:")
         hbox.addWidget(text_verbose)
-        text_verbose.setMinimumWidth(80)
+        text_verbose.setMinimumWidth(100)
         self.set_verbose = QtWidgets.QCheckBox()
         self.set_verbose.setChecked(True)
         hbox.addWidget(self.set_verbose)
+        hbox.addStretch()
+
+        # only #MRZ/SPO
+        hbox = QtWidgets.QHBoxLayout()
+        vbox.addLayout(hbox)
+        text_reply_mrz = QtWidgets.QLabel("Reply #MRZ/#SPO:")
+        hbox.addWidget(text_reply_mrz)
+        text_reply_mrz.setMinimumWidth(100)
+        self.set_reply_mrz = QtWidgets.QCheckBox()
+        self.set_reply_mrz.setChecked(True)
+        hbox.addWidget(self.set_reply_mrz)
+        hbox.addStretch()
+
+        # only #SSM
+        hbox = QtWidgets.QHBoxLayout()
+        vbox.addLayout(hbox)
+        text_reply_ssm = QtWidgets.QLabel("Reply #SSM:")
+        hbox.addWidget(text_reply_ssm)
+        text_reply_ssm.setMinimumWidth(100)
+        self.set_reply_ssm = QtWidgets.QCheckBox()
+        self.set_reply_ssm.setChecked(True)
+        hbox.addWidget(self.set_reply_ssm)
         hbox.addStretch()
 
     def set_sis_4(self):
@@ -181,12 +203,16 @@ class ControlPanel(QtWidgets.QWidget):
         self.set_input_port.setText(self.default_sis4_input_port)
         self.set_output_ip.setText(self.default_sis_output_ip)
         self.set_output_port.setText(self.default_sis_output_port)
+        self.set_reply_mrz.setDisabled(True)
+        self.set_reply_ssm.setDisabled(True)
 
     def set_sis_5(self):
         self.list_files.clear()
         self.set_input_port.setText(self.default_sis5_input_port)
         self.set_output_ip.setText(self.default_sis_output_ip)
         self.set_output_port.setText(self.default_sis_output_port)
+        self.set_reply_mrz.setEnabled(True)
+        self.set_reply_ssm.setEnabled(True)
 
     def enable_commands(self, enable: bool):
         self.sis_4.setEnabled(enable)
@@ -195,6 +221,8 @@ class ControlPanel(QtWidgets.QWidget):
         self.set_output_ip.setEnabled(enable)
         self.set_output_port.setEnabled(enable)
         self.set_verbose.setEnabled(enable)
+        self.set_reply_mrz.setEnabled(enable)
+        self.set_reply_ssm.setEnabled(enable)
         self.button_add_files.setEnabled(enable)
         self.button_clear_files.setEnabled(enable)
         self.button_start_sis.setEnabled(enable)
@@ -330,7 +358,8 @@ class ControlPanel(QtWidgets.QWidget):
         output_port = int(self.set_output_port.text())
         self.sis = Sis(port_in=input_port, port_out=output_port, ip_out=output_ip,
                        replay_timing=self._replay_timing, use_sis5=self.sis_5.isChecked(),
-                       debug=self.set_verbose.isChecked())
+                       debug=self.set_verbose.isChecked(), reply_ssm=self.set_reply_ssm.isChecked(),
+                       reply_mrz=self.set_reply_mrz.isChecked())
         logger.debug('created new simulator')
 
         file_list = list()
