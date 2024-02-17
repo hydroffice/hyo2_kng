@@ -2,8 +2,8 @@ import logging
 import os
 import time
 from multiprocessing import freeze_support
-from hyo2.abc.lib.testing import Testing
-from hyo2.abc.lib.logging import set_logging
+from hyo2.abc2.lib.testing import Testing
+from hyo2.abc2.lib.logging import set_logging
 from hyo2.kng.lib.sis import Sis
 
 set_logging(ns_list=['hyo2.kng'])

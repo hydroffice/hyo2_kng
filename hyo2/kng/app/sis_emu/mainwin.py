@@ -1,11 +1,11 @@
 import logging
 
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 from urllib.request import urlopen
 
-from hyo2.abc.lib.helper import Helper
-from hyo2.abc.app.web_renderer import WebRenderer
-from hyo2.kng import lib_info
+from hyo2.abc2.lib.package.pkg_helper import PkgHelper
+from hyo2.abc2.app.browser.web_renderer import WebRenderer
+from hyo2.kng import pkg_info
 from hyo2.kng.app.sis_emu import app_info
 from hyo2.kng.app.sis_emu.controlpanel import ControlPanel
 
@@ -43,9 +43,9 @@ class MainWin(QtWidgets.QMainWindow):
     def _check_web_page(self, token: str = ""):
         try:
             if len(token) > 0:
-                url = "%s_%s" % (Helper(lib_info=lib_info).web_url(), token)
+                url = "%s_%s" % (PkgHelper(pkg_info=pkg_info).web_url(), token)
             else:
-                url = "%s" % Helper(lib_info=lib_info).web_url()
+                url = "%s" % PkgHelper(pkg_info=pkg_info).web_url()
             self._web.open(url=url)
             logger.debug('check %s' % url)
 
@@ -55,7 +55,7 @@ class MainWin(QtWidgets.QMainWindow):
     @classmethod
     def _check_latest_release(cls):
         try:
-            response = urlopen(lib_info.lib_latest_url, timeout=1)
+            response = urlopen(pkg_info.latest_url, timeout=1)
             latest_version = response.read().split()[0].decode()
             cur_maj, cur_min, cur_fix = app_info.app_version.split('.')
             lat_maj, lat_min, lat_fix = latest_version.split('.')
@@ -78,9 +78,10 @@ class MainWin(QtWidgets.QMainWindow):
         msg_box.setWindowTitle(title)
         msg_box.setIconPixmap(QtGui.QPixmap(app_info.app_icon_path).scaled(QtCore.QSize(36, 36)))
         msg_box.setText('Do you really want to %s?' % text)
+        # noinspection PyUnresolvedReferences
         msg_box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         msg_box.setDefaultButton(QtWidgets.QMessageBox.No)
-        return msg_box.exec_()
+        return msg_box.exec()
 
     def closeEvent(self, event):
         """ actions to be done before close the app """

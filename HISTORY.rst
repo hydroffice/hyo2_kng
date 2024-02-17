@@ -1,6 +1,15 @@
 History
 -------
 
+1.3
+~~~
+
+2024-02-17
+
+- Added #SSM datagrams.
+- Switch to PySide6
+
+
 0.2
 ~~~
 

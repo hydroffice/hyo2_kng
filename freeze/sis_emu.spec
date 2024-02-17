@@ -4,17 +4,12 @@
 #
 # To compile, execute the following within the source directory:
 #
-# python /path/to/pyinstaller.py SIS.spec
+# python /path/to/pyinstaller.py sis_emu.spec
 #
 # The resulting .exe file is placed in the dist/SIS folder.
 #
-# - It may require to manually copy DLL libraries.
-# - Uninstall PyQt and sip
-# - For QtWebEngine:
-#   . copy QtWebEngineProcess.exe in the root
-#   . copy in PySide2 both "resources" and "translations" folder
 #
-# Uploading to BitBucket: curl -s -v -u giumas:password -X POST https://api.bitbucket.org/2.0/repositories/hydroffice/hyo_kng/downloads -F files=@SIS.1.1.0.zip
+# Uploading to BitBucket: curl -s -v -u giumas:password -X POST https://api.bitbucket.org/2.0/repositories/hydroffice/hyo_kng/downloads -F files=@SISEmu.1.3.0.zip
 
 from datetime import datetime
 import os
@@ -22,7 +17,9 @@ import sys
 from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT, TOC
 from PyInstaller.compat import is_darwin, is_win
 
-from hyo2.kng.sis import __version__ as sis_version
+from hyo2.kng import __version__ as sis_version
+
+sys.setrecursionlimit(20000)
 
 is_beta = False
 if is_beta:
@@ -100,18 +97,17 @@ share_folder = os.path.join(python_path(), "Library", "share")
 output_folder = os.path.join("Library", "share")
 pyproj_data = collect_folder_data(input_data_folder=share_folder, relative_output_folder=output_folder)
 
-pyside2_data = collect_pkg_data('PySide2')
-abc_data = collect_pkg_data('hyo2.abc')
+abc2_data = collect_pkg_data('hyo2.abc2')
 kng_data = collect_pkg_data('hyo2.kng')
 
-icon_file = os.path.join('freeze', 'SIS.ico')
+icon_file = os.path.normpath(os.path.join(os.getcwd(), 'freeze', 'sis_emu.ico'))
 if is_darwin:
-    icon_file = os.path.join('freeze', 'SIS.icns')
+    icon_file = os.path.normpath(os.path.join(os.getcwd(), 'freeze', 'sis_emu.icns'))
 
-a = Analysis(['SIS.py'],
+a = Analysis(['sis_emu.py'],
              pathex=[],
-             hiddenimports=["PIL", "typing", "cftime._cftime", "PySide2.QtPrintSupport"],
-             excludes=["IPython", "PyQt4", "PyQt5", "pandas", "sphinx", "sphinx_rtd_theme",
+             hiddenimports=["PIL", "typing", "cftime._cftime", "pkg_resources"],
+             excludes=["IPython", "PyQt4", "PyQt5", "PySide2", "pandas", "sphinx", "sphinx_rtd_theme",
                        "OpenGL_accelerate", "FixTk", "tcl", "tk", "_tkinter", "tkinter", "Tkinter",
                        "wx"],
              hookspath=None,
@@ -121,7 +117,7 @@ pyz = PYZ(a.pure)
 exe = EXE(pyz,
           a.scripts,
           exclude_binaries=True,
-          name='SIS.%s%s' % (sis_version, beta),
+          name='SISEmu',
           debug=False,
           strip=None,
           upx=True,
@@ -132,9 +128,8 @@ coll = COLLECT(exe,
                a.zipfiles,
                a.datas,
                pyproj_data,
-               pyside2_data,
-               abc_data,
+               abc2_data,
                kng_data,
                strip=None,
                upx=True,
-               name='SIS.%s%s' % (sis_version, beta))
+               name='SISEmu.%s%s' % (sis_version, beta))

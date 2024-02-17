@@ -1,8 +1,12 @@
 import logging
 import os
-from PySide2 import QtCore, QtGui, QtWidgets
+from typing import Union
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
+from hyo2.abc2.app.qt_progress import QtProgress
+from hyo2.kng.app.sis_emu import app_info
 from hyo2.kng.lib.sis import Sis
-from hyo2.abc.app.qt_progress import QtProgress
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +35,12 @@ class ControlPanel(QtWidgets.QWidget):
         self.set_input_port = None
         self.set_output_ip = None
         self.set_output_port = None
+        self.sis_settings_dist = 120
         self._make_sis_settings()
 
         self.sis_inputs = QtWidgets.QGroupBox("inputs")
         self.sis_inputs.setStyleSheet("QGroupBox::title { color: rgb(155, 155, 155); }")
-        self.sis_inputs.setMaximumHeight(140)
+        self.sis_inputs.setMaximumHeight(170)
         self.vbox.addWidget(self.sis_inputs)
         self.list_files = None
         self._make_sis_inputs()
@@ -47,7 +52,7 @@ class ControlPanel(QtWidgets.QWidget):
 
         # info viewer
         self.viewer = QtWidgets.QTextBrowser()
-        self.viewer.resize(QtCore.QSize(320, 40))
+        self.viewer.resize(QtCore.QSize(320, 60))
         self.viewer.setTextColor(QtGui.QColor("#4682b4"))
         self.viewer.ensureCursorVisible()
         # create a monospace font
@@ -59,13 +64,14 @@ class ControlPanel(QtWidgets.QWidget):
         # set the tab size
         metrics = QtGui.QFontMetrics(font)
         # noinspection PyArgumentList
-        self.viewer.setTabStopWidth(3 * metrics.width(' '))
+        self.viewer.setTabStopDistance(3 * metrics.horizontalAdvance(' '))
         self.viewer.setReadOnly(True)
         self.vbox.addWidget(self.viewer)
 
         self.vbox.addSpacing(6)
         comments = QtWidgets.QLabel("<i>Comments and suggestions:</i> "
-                                    "<a href='mailto:gmasetti@ccom.unh.edu'>gmasetti@ccom.unh.edu</a>")
+                                    "<a href='mailto:%s'>%s</a>"
+                                    % (app_info.app_author_email, app_info.app_author))
         comments.setOpenExternalLinks(True)
         self.vbox.addWidget(comments)
 
@@ -92,7 +98,7 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_input_port = QtWidgets.QLabel("SIS Version:")
         hbox.addWidget(text_input_port)
-        text_input_port.setMinimumWidth(100)
+        text_input_port.setMinimumWidth(self.sis_settings_dist)
         self.sis_4 = QtWidgets.QRadioButton()
         hbox.addWidget(self.sis_4)
         self.sis_4.setText("SIS4")
@@ -115,7 +121,7 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_input_port = QtWidgets.QLabel("Input port:")
         hbox.addWidget(text_input_port)
-        text_input_port.setMinimumWidth(100)
+        text_input_port.setMinimumWidth(self.sis_settings_dist)
         self.set_input_port = QtWidgets.QLineEdit("")
         hbox.addWidget(self.set_input_port)
         validator = QtGui.QIntValidator(0, 65535)
@@ -126,12 +132,12 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_output_ip = QtWidgets.QLabel("Output IP:")
         hbox.addWidget(text_output_ip)
-        text_output_ip.setMinimumWidth(100)
+        text_output_ip.setMinimumWidth(self.sis_settings_dist)
         self.set_output_ip = QtWidgets.QLineEdit("")
         hbox.addWidget(self.set_output_ip)
         octet = "(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])"
-        reg_ex = QtCore.QRegExp(r"^%s\.%s\.%s\.%s$" % (octet, octet, octet, octet))
-        validator = QtGui.QRegExpValidator(reg_ex)
+        reg_ex = QtCore.QRegularExpression(r"^%s\.%s\.%s\.%s$" % (octet, octet, octet, octet))
+        validator = QtGui.QRegularExpressionValidator(reg_ex)
         self.set_output_ip.setValidator(validator)
 
         # output port
@@ -139,7 +145,7 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_output_port = QtWidgets.QLabel("Output port:")
         hbox.addWidget(text_output_port)
-        text_output_port.setMinimumWidth(100)
+        text_output_port.setMinimumWidth(self.sis_settings_dist)
         self.set_output_port = QtWidgets.QLineEdit("")
         hbox.addWidget(self.set_output_port)
         validator = QtGui.QIntValidator(0, 65535)
@@ -152,7 +158,7 @@ class ControlPanel(QtWidgets.QWidget):
         vbox.addLayout(hbox)
         text_timing = QtWidgets.QLabel("Timing:")
         hbox.addWidget(text_timing)
-        text_timing.setMinimumWidth(100)
+        text_timing.setMinimumWidth(self.sis_settings_dist)
         self.set_timing = QtWidgets.QSlider()
         # noinspection PyUnresolvedReferences
         self.set_timing.setOrientation(QtCore.Qt.Horizontal)
@@ -168,34 +174,26 @@ class ControlPanel(QtWidgets.QWidget):
         # verbose
         hbox = QtWidgets.QHBoxLayout()
         vbox.addLayout(hbox)
-        text_verbose = QtWidgets.QLabel("Verbose:")
+        text_verbose = QtWidgets.QLabel("Debug:")
         hbox.addWidget(text_verbose)
-        text_verbose.setMinimumWidth(100)
-        self.set_verbose = QtWidgets.QCheckBox()
+        text_verbose.setMinimumWidth(self.sis_settings_dist)
+        self.set_verbose = QtWidgets.QCheckBox("Verbose")
         self.set_verbose.setChecked(True)
         hbox.addWidget(self.set_verbose)
         hbox.addStretch()
 
-        # only #MRZ/SPO
+        # only #MRZ/SPO and #SSM
         hbox = QtWidgets.QHBoxLayout()
         vbox.addLayout(hbox)
-        text_reply_mrz = QtWidgets.QLabel("Reply #MRZ/#SPO:")
-        hbox.addWidget(text_reply_mrz)
-        text_reply_mrz.setMinimumWidth(100)
-        self.set_reply_mrz = QtWidgets.QCheckBox()
-        self.set_reply_mrz.setChecked(True)
-        hbox.addWidget(self.set_reply_mrz)
-        hbox.addStretch()
-
-        # only #SSM
-        hbox = QtWidgets.QHBoxLayout()
-        vbox.addLayout(hbox)
-        text_reply_ssm = QtWidgets.QLabel("Reply #SSM:")
-        hbox.addWidget(text_reply_ssm)
-        text_reply_ssm.setMinimumWidth(100)
-        self.set_reply_ssm = QtWidgets.QCheckBox()
-        self.set_reply_ssm.setChecked(True)
-        hbox.addWidget(self.set_reply_ssm)
+        text_replay_mrz = QtWidgets.QLabel("Replay:")
+        hbox.addWidget(text_replay_mrz)
+        text_replay_mrz.setMinimumWidth(self.sis_settings_dist)
+        self.set_replay_mrz = QtWidgets.QCheckBox("#MRZ/#SPO")
+        self.set_replay_mrz.setChecked(True)
+        hbox.addWidget(self.set_replay_mrz)
+        self.set_replay_ssm = QtWidgets.QCheckBox("#SSM")
+        self.set_replay_ssm.setChecked(True)
+        hbox.addWidget(self.set_replay_ssm)
         hbox.addStretch()
 
     def set_sis_4(self):
@@ -203,16 +201,16 @@ class ControlPanel(QtWidgets.QWidget):
         self.set_input_port.setText(self.default_sis4_input_port)
         self.set_output_ip.setText(self.default_sis_output_ip)
         self.set_output_port.setText(self.default_sis_output_port)
-        self.set_reply_mrz.setDisabled(True)
-        self.set_reply_ssm.setDisabled(True)
+        self.set_replay_mrz.setDisabled(True)
+        self.set_replay_ssm.setDisabled(True)
 
     def set_sis_5(self):
         self.list_files.clear()
         self.set_input_port.setText(self.default_sis5_input_port)
         self.set_output_ip.setText(self.default_sis_output_ip)
         self.set_output_port.setText(self.default_sis_output_port)
-        self.set_reply_mrz.setEnabled(True)
-        self.set_reply_ssm.setEnabled(True)
+        self.set_replay_mrz.setEnabled(True)
+        self.set_replay_ssm.setEnabled(True)
 
     def enable_commands(self, enable: bool):
         self.sis_4.setEnabled(enable)
@@ -221,8 +219,8 @@ class ControlPanel(QtWidgets.QWidget):
         self.set_output_ip.setEnabled(enable)
         self.set_output_port.setEnabled(enable)
         self.set_verbose.setEnabled(enable)
-        self.set_reply_mrz.setEnabled(enable)
-        self.set_reply_ssm.setEnabled(enable)
+        self.set_replay_mrz.setEnabled(enable)
+        self.set_replay_ssm.setEnabled(enable)
         self.button_add_files.setEnabled(enable)
         self.button_clear_files.setEnabled(enable)
         self.button_start_sis.setEnabled(enable)
@@ -275,14 +273,14 @@ class ControlPanel(QtWidgets.QWidget):
         self.button_start_sis.setToolTip('Start emulation using defined settings')
         # noinspection PyUnresolvedReferences
         self.button_start_sis.clicked.connect(self.start_emulation)
-        
+
         self.button_send_fake = QtWidgets.QPushButton()
         hbox.addWidget(self.button_send_fake)
         self.button_send_fake.setText("Send fake SSP")
         self.button_send_fake.setToolTip('Send a fake sound speed profile')
         # noinspection PyUnresolvedReferences
         self.button_send_fake.clicked.connect(self.send_fake)
-        
+
         self.button_send_latest = QtWidgets.QPushButton()
         hbox.addWidget(self.button_send_latest)
         self.button_send_latest.setText("Send latest SSP")
@@ -306,17 +304,19 @@ class ControlPanel(QtWidgets.QWidget):
         logger.debug('adding files')
 
         settings = QtCore.QSettings()
-        source_folder = settings.value("source_folder", self.here)
+        source_folder = settings.value("source_folder", self.here)  # type: Union[object,str]
 
         # ask the file path to the user
         if self.sis_4.isChecked():
             # noinspection PyCallByClass
-            selections, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Kongsberg data files", source_folder,
+            selections, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Kongsberg data files",
+                                                                   source_folder,
                                                                    "EM .all files (*.all *.wcd);;"
                                                                    "All files (*.*)", "")
         elif self.sis_5.isChecked():
             # noinspection PyCallByClass
-            selections, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Kongsberg data files", source_folder,
+            selections, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Kongsberg data files",
+                                                                   source_folder,
                                                                    "KMall .kmall files (*.kmall);;"
                                                                    "All files (*.*)", "")
         else:
@@ -335,7 +335,7 @@ class ControlPanel(QtWidgets.QWidget):
             ret = self.list_files.findItems(f, QtCore.Qt.MatchExactly)
             if len(ret) > 0:
                 logger.debug('duplicated %s' % os.path.basename(f))
-                # noinspection PyCallByClass,PyArgumentList
+                # noinspection PyCallByClass,PyArgumentList,PyTypeChecker
                 QtWidgets.QMessageBox.warning(self, "File Duplication",
                                               "Attempt to add a listed file:\n%s" % os.path.basename(f),
                                               QtWidgets.QMessageBox.Ok)
@@ -358,8 +358,8 @@ class ControlPanel(QtWidgets.QWidget):
         output_port = int(self.set_output_port.text())
         self.sis = Sis(port_in=input_port, port_out=output_port, ip_out=output_ip,
                        replay_timing=self._replay_timing, use_sis5=self.sis_5.isChecked(),
-                       verbose=self.set_verbose.isChecked(), replay_ssm=self.set_reply_ssm.isChecked(),
-                       replay_mrz=self.set_reply_mrz.isChecked())
+                       verbose=self.set_verbose.isChecked(), replay_ssm=self.set_replay_ssm.isChecked(),
+                       replay_mrz=self.set_replay_mrz.isChecked())
         logger.debug('created new simulator')
 
         file_list = list()

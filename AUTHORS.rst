@@ -5,7 +5,7 @@ Credits
 Authors
 ~~~~~~~
 
-OpenBST is written and maintained by:
+Kng is written and maintained by:
 
 - `Giuseppe Masetti <mailto:gmasetti@ccom.unh.edu>`_
 

@@ -4,15 +4,11 @@ environment:
 
   matrix:
 
-    - PYTHON_VERSION: 3.6
+    - PYTHON_VERSION: 3.8
       PYTHON_ARCH: x64
       MINICONDA: C:\Miniconda36-x64
 
-    - PYTHON_VERSION: 3.7
-      PYTHON_ARCH: x64
-      MINICONDA: C:\Miniconda36-x64
-
-    - PYTHON_VERSION: 3.5
+    - PYTHON_VERSION: 3.9
       PYTHON_ARCH: x64
       MINICONDA: C:\Miniconda36-x64
 
@@ -20,11 +16,7 @@ matrix:
 
   allow_failures:
 
-    - PYTHON_VERSION: 3.7
-      PYTHON_ARCH: x64
-      MINICONDA: C:\Miniconda36-x64
-
-    - PYTHON_VERSION: 3.5
+    - PYTHON_VERSION: 3.9
       PYTHON_ARCH: x64
       MINICONDA: C:\Miniconda36-x64
 
@@ -44,15 +36,13 @@ install:
   - python --version
 
   - pip install coveralls PyYAML
-  - pip install PySide2
+  - pip install PySide6
   - conda install numpy matplotlib-base gdal pyproj scipy basemap netCDF4 pillow
-  - pip install https://github.com/hydroffice/hyo2_abc/archive/master.zip
+  - pip install https://github.com/hydroffice/hyo2_abc2/archive/master.zip
 
 build: off
 build_script:
   - pip install .
-  # - conda remove --force PyQt Qt sip
-  - del /q %MINICONDA%\envs\test-environment\qt.conf
   - conda list --show-channel-urls
 
 test: off
