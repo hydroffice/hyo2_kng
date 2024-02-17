@@ -4,9 +4,10 @@ import operator
 import socket
 from datetime import datetime
 
-logging.basicConfig(level=logging.DEBUG,
-                    format="%(levelname)-9s %(name)s.%(funcName)s:%(lineno)d > %(message)s")
+from hyo2.abc2.lib.logging import set_logging
+
 logger = logging.getLogger(__name__)
+set_logging()
 
 use_sis5 = True
 

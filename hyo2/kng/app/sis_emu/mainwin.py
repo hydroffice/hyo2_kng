@@ -5,9 +5,9 @@ from urllib.request import urlopen
 
 from hyo2.abc.lib.helper import Helper
 from hyo2.abc.app.web_renderer import WebRenderer
-from hyo2.kng.sis.lib import lib_info
-from hyo2.kng.sis.app import app_info
-from hyo2.kng.sis.app.controlpanel import ControlPanel
+from hyo2.kng import lib_info
+from hyo2.kng.app.sis_emu import app_info
+from hyo2.kng.app.sis_emu.controlpanel import ControlPanel
 
 logger = logging.getLogger(__name__)
 

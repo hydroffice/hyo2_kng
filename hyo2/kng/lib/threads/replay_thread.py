@@ -4,9 +4,10 @@ import socket
 import threading
 import time
 from threading import Lock
-from typing import Optional
-from hyo2.kng.sis.lib.kng_all import KngAll
-from hyo2.kng.sis.lib.kng_kmall import KngKmall
+from typing import List, Optional
+
+from hyo2.kng.lib.kng_all import KngAll
+from hyo2.kng.lib.kng_kmall import KngKmall
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,9 @@ class ReplayThread(threading.Thread):
 
     class Sis:
         def __init__(self):
-            self.installation = list()
-            self.runtime = list()
-            self.ssp = list()
+            self.installation = list()  # type: List[bytes]
+            self.runtime = list()  # type: List[bytes]
+            self.ssp = list()  # type: List[bytes]
             self.lists_lock = threading.Lock()
 
     class Sis4:
@@ -48,20 +49,20 @@ class ReplayThread(threading.Thread):
             self.ssm_count = 0  # Sound Speed Manager (SSM) datagram
             self.svp_count = 0  # Sensor (S) data from sound velocity (V) profile (P) or CTD datagram
 
-    def __init__(self, installation: list, runtime: list, ssp: list, lists_lock: threading.Lock, files: list,
-                 replay_timing: float = 1.0, port_out: int = 26103,
+    def __init__(self, installation: List[bytes], runtime: List[bytes], ssp: List[bytes], lists_lock: threading.Lock,
+                 files: List[str], replay_timing: float = 1.0, port_out: int = 26103,
                  ip_out: str = "localhost", target: Optional[object] = None, name: str = "REP", use_sis5: bool = False,
-                 debug: bool = False, reply_ssm: bool = True, reply_mrz: bool = True):
+                 debug: bool = False, replay_ssm: bool = True, replay_mrz: bool = True):
         threading.Thread.__init__(self, target=target, name=name)
         self.debug = debug
 
         self.port_out = port_out
         self.ip_out = ip_out
         self.use_sis5 = use_sis5
-        self.reply_ssm = reply_ssm
-        self.reply_mrz = reply_mrz
-        self.files = files
+        self._replay_ssm = replay_ssm
+        self._replay_mrz = replay_mrz
         self._replay_timing = replay_timing
+        self.files = files
 
         self.sock_in = None
         self.sock_out = None
@@ -122,7 +123,7 @@ class ReplayThread(threading.Thread):
             time.sleep(1)
             logger.debug("sleep")
 
-        logger.debug("%s ended" % self.name)
+        logger.debug("%s ends" % self.name)
 
     def stop(self):
         """Stop the thread"""
@@ -224,46 +225,48 @@ class ReplayThread(threading.Thread):
         # - b'#SVP': 'Sensor (S) data from sound velocity (V) profile (P) or CTD'
         # - b'#SSM': 'Sound (S) Speed (S) Manager (M)'
         filtered_datagrams = [b'#IIP', b'#IOP', b'#SVP']
-        if self.reply_mrz:
+        if self._replay_mrz:
             filtered_datagrams.append(b'#SPO')
             filtered_datagrams.append(b'#MRZ')
-        if self.reply_ssm:
+        if self._replay_ssm:
             filtered_datagrams.append(b'#SSM')
+        if base.id not in filtered_datagrams:
+            return False
 
-        if base.id in filtered_datagrams:
-            logger.debug("%s > sending dg %s (length: %sB)"
-                         % (base.dg_time, base.id, base.length))
-            f.seek(-base.length, 1)
-            dg_data = f.read(base.length)
+        if base.length > 65507:
+            logger.info("%s > skipping dg %s (length: %sB) > datagram split not implemented"
+                        % (base.dg_time, base.id, base.length))
+            return False
 
-            # Stores a few datagrams of interest in data lists:
-            with self.sis.lists_lock:
-                if base.id == b'#IIP':
-                    self.sis.installation.clear()
-                    self.sis.installation.append(dg_data)
-                    self.sis5.iip_count += 1
-                elif base.id == b'#IOP':
-                    self.sis.runtime.clear()
-                    self.sis.runtime.append(dg_data)
-                    self.sis5.iop_count += 1
-                elif base.id == b'#SPO':
-                    self.sis5.spo_count += 1
-                elif base.id == b'#MRZ':
-                    self.sis5.mrz_count += 1
-                elif base.id == b'#SVP':
-                    self.sis.ssp.clear()
-                    self.sis.ssp.append(dg_data)
-                    self.sis5.svp_count += 1
-                elif base.id == b'#SSM':
-                    self.sis5.ssm_count += 1
+        logger.debug("%s > sending dg %s (length: %sB)" % (base.dg_time, base.id, base.length))
+        f.seek(-base.length, 1)
+        dg_data = f.read(base.length)
 
-            if base.length > 65507:
-                logger.warning('skipping for length: %s %s -> datagram split not implemented' % (base.id, base.length))
-            else:
-                self.sock_out.sendto(dg_data, (self.ip_out, self.port_out))
+        # Stores a few datagrams of interest in data lists:
+        with self.sis.lists_lock:
+            if base.id == b'#IIP':
+                self.sis.installation.clear()
+                self.sis.installation.append(dg_data)
+                self.sis5.iip_count += 1
+            elif base.id == b'#IOP':
+                self.sis.runtime.clear()
+                self.sis.runtime.append(dg_data)
+                self.sis5.iop_count += 1
+            elif base.id == b'#SPO':
+                self.sis5.spo_count += 1
+            elif base.id == b'#MRZ':
+                self.sis5.mrz_count += 1
+            elif base.id == b'#SVP':
+                self.sis.ssp.clear()
+                self.sis.ssp.append(dg_data)
+                self.sis5.svp_count += 1
+            elif base.id == b'#SSM':
+                self.sis5.ssm_count += 1
 
-            with self._lock:
-                time.sleep(self._replay_timing)
+        self.sock_out.sendto(dg_data, (self.ip_out, self.port_out))
+
+        with self._lock:
+            time.sleep(self._replay_timing)
 
         return False
 

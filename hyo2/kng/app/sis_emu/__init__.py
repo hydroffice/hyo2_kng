@@ -1,12 +1,12 @@
 import os
 from hyo2.abc.app.app_info import AppInfo
-from hyo2.kng.sis import name, __version__
+from hyo2.kng import name, __version__
 
 app_info = AppInfo()
 
 app_info.app_name = name
 app_info.app_version = __version__
-app_info.app_author = "Giuseppe Masetti(UNH,CCOM)"
+app_info.app_author = "Giuseppe Masetti(UNH,JHC-CCOM)"
 app_info.app_author_email = "gmasetti@ccom.unh.edu"
 
 app_info.app_license = "LGPLv3"

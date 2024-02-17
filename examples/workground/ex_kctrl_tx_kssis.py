@@ -2,9 +2,10 @@ import logging
 from enum import Enum
 import socket
 
-logging.basicConfig(level=logging.DEBUG,
-                    format="%(asctime)s %(levelname)-9s > %(message)s")
+from hyo2.abc2.lib.logging import set_logging
+
 logger = logging.getLogger(__name__)
+set_logging()
 
 
 class KSSIS(Enum):

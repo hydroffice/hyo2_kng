@@ -1,7 +1,7 @@
 import logging
 import os
 from PySide2 import QtCore, QtGui, QtWidgets
-from hyo2.kng.sis.lib.sis import Sis
+from hyo2.kng.lib.sis import Sis
 from hyo2.abc.app.qt_progress import QtProgress
 
 logger = logging.getLogger(__name__)
@@ -358,8 +358,8 @@ class ControlPanel(QtWidgets.QWidget):
         output_port = int(self.set_output_port.text())
         self.sis = Sis(port_in=input_port, port_out=output_port, ip_out=output_ip,
                        replay_timing=self._replay_timing, use_sis5=self.sis_5.isChecked(),
-                       debug=self.set_verbose.isChecked(), reply_ssm=self.set_reply_ssm.isChecked(),
-                       reply_mrz=self.set_reply_mrz.isChecked())
+                       verbose=self.set_verbose.isChecked(), replay_ssm=self.set_reply_ssm.isChecked(),
+                       replay_mrz=self.set_reply_mrz.isChecked())
         logger.debug('created new simulator')
 
         file_list = list()

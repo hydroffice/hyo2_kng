@@ -1,9 +1,10 @@
 import logging
 import os
 import threading
+from typing import List, Optional
 
-from hyo2.kng.sis.lib.threads.replay_thread import ReplayThread
-from hyo2.kng.sis.lib.threads.svp_thread import SvpThread
+from hyo2.kng.lib.threads.replay_thread import ReplayThread
+from hyo2.kng.lib.threads.svp_thread import SvpThread
 
 logger = logging.getLogger(__name__)
 
@@ -11,30 +12,31 @@ logger = logging.getLogger(__name__)
 class Sis:
     """SIS simulator"""
 
-    def __init__(self, replay_timing=1.0, port_in=4001, port_out=26103, ip_out="localhost",
-                 use_sis5: bool = False, debug=False, reply_ssm: bool = True, reply_mrz: bool = True):
-        self.verbose = debug
-        self._replay_timing = replay_timing
+    def __init__(self, port_in: int = 4001, port_out: int = 26103, ip_out: str = "localhost",
+                 replay_timing: float = 1.0, use_sis5: bool = True, replay_ssm: bool = True, replay_mrz: bool = True,
+                 verbose: bool = False):
 
         # user settings
         self.port_in = port_in
         self.port_out = port_out
         self.ip_out = ip_out
         self.use_sis5 = use_sis5
-        self.reply_ssm = reply_ssm
-        self.reply_mrz = reply_mrz
+        self._replay_ssm = replay_ssm
+        self._replay_mrz = replay_mrz
+        self._replay_timing = replay_timing
+        self.verbose = verbose
 
         # threads
-        self.t_svp = None
-        self.t_replay = None
+        self.t_svp: Optional[SvpThread] = None
+        self.t_replay: Optional[ReplayThread] = None
 
-        self.ssp = list()
-        self.installation = list()
-        self.runtime = list()
+        self.ssp = list()  # type: List[bytes]
+        self.installation = list()  # type: List[bytes]
+        self.runtime = list()  # type: List[bytes]
 
-        self.files = list()
+        self.files = list()  # type: List[str]
 
-    def set_files(self, files):
+    def set_files(self, files: List[str]) -> None:
         """set the files to be used by the simulator"""
         # logger.debug("setting files")
 
@@ -53,7 +55,7 @@ class Sis:
         if len(self.files) == 0:
             raise RuntimeError("Not valid file paths passed")
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the process"""
         self.t_svp.stop()
         self.t_svp.join()
@@ -61,7 +63,7 @@ class Sis:
         self.t_replay.stop()
         self.t_replay.join()
 
-    def start(self):
+    def start(self) -> None:
 
         lists_lock = threading.Lock()
 
@@ -88,12 +90,12 @@ class Sis:
             ip_out=self.ip_out,
             use_sis5=self.use_sis5,
             debug=self.verbose,
-            reply_ssm=self.reply_ssm,
-            reply_mrz=self.reply_mrz
+            replay_ssm=self._replay_ssm,
+            replay_mrz=self._replay_mrz
         )
         self.t_replay.start()
 
-    def set_timing(self, timing: float):
+    def set_timing(self, timing: float) -> None:
         logger.debug('new timing: %s' % timing)
         self.t_replay.lock_data()
         self.t_replay.replay_timing = timing

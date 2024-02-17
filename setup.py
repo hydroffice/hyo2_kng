@@ -44,7 +44,6 @@ setup(
 
     },
     zip_safe=False,
-    ext_modules=None,
     setup_requires=[
         "setuptools",
         "wheel"
@@ -52,14 +51,14 @@ setup(
     install_requires=[
         "hyo2.abc",
         "numpy",
-        # "PySide2"
+        # "PySide6"
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.8',
     entry_points={
         "gui_scripts": [
+            "SISEmu = hyo2.kng.app.sis_emu.__main__:main",
         ],
         "console_scripts": [
-            "SIS = hyo2.kng.sis.__main__:main",
         ],
     },
     test_suite="tests",
@@ -68,20 +67,20 @@ setup(
     long_description=read(os.path.join(here, "README.rst")),
     url="https://www.hydroffice.org/openbst/main",
     classifiers=[  # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "Natural Language :: English",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        'Programming Language :: Python :: 3',
         "Programming Language :: Python :: 3.8",
-        "Topic :: Scientific/Engineering :: GIS",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        'Topic :: Scientific/Engineering :: GIS',
+        'Topic :: Office/Business :: Office Suites',
     ],
     keywords="hydrography ocean mapping acoustic data format emulator",
-    author="Giuseppe Masetti",
+    author="Giuseppe Masetti(UNH,JHC-CCOM)",
     author_email="gmasetti@ccom.unh.edu",
 )

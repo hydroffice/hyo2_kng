@@ -3,9 +3,10 @@ import logging
 import operator
 import socket
 
-logging.basicConfig(level=logging.DEBUG,
-                    format="%(levelname)-9s %(name)s.%(funcName)s:%(lineno)d > %(message)s")
+from hyo2.abc2.lib.logging import set_logging
+
 logger = logging.getLogger(__name__)
+set_logging()
 
 sis_svp_ip = '127.0.0.1'
 sis_svp_port = 4001

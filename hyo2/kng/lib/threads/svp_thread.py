@@ -1,11 +1,12 @@
 import datetime
-import time
-import threading
+import logging
 import socket
 import struct
+import threading
+import time
+from typing import List, Optional
+
 import numpy as np
-from typing import Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +14,9 @@ logger = logging.getLogger(__name__)
 class SvpThread(threading.Thread):
     class Sis:
         def __init__(self):
-            self.installation = list()
-            self.runtime = list()
-            self.ssp = list()
+            self.installation = list()  # type: List[bytes]
+            self.runtime = list()  # type: List[bytes]
+            self.ssp = list()  # type: List[bytes]
             self.lists_lock = threading.Lock()
 
             self.r20_count = 0
@@ -23,7 +24,7 @@ class SvpThread(threading.Thread):
             self.snn_count = 0
             self.k454_count = 0
 
-    def __init__(self, installation: list, runtime: list, ssp: list, lists_lock: threading.Lock,
+    def __init__(self, installation: List[bytes], runtime: List[bytes], ssp: List[bytes], lists_lock: threading.Lock,
                  port_in: int = 4001, port_out: int = 26103, ip_out: str = "localhost",
                  target: Optional[object] = None, name: str = "SVP", use_sis5: bool = False,
                  debug: bool = False) -> None:
@@ -64,7 +65,7 @@ class SvpThread(threading.Thread):
             self.interaction()
             time.sleep(1)
 
-        logger.debug("%s end" % self.name)
+        logger.debug("%s ends" % self.name)
 
     def stop(self) -> None:
         """Stop the thread"""
@@ -304,7 +305,7 @@ class SvpThread(threading.Thread):
         self.sis.ssp_count += 1
 
     def _create_sis5_ssp(self, depths: np.ndarray, speeds: np.ndarray,
-                         date: Optional[int] = None, secs: Optional[int] = None) -> bytes:
+                         date: Optional[str] = None, secs: Optional[int] = None) -> bytes:
         if self.debug:
             logger.debug('creating a SIS5 binary ssp')
 

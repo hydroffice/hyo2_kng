@@ -1,42 +1,32 @@
 import logging
 import os
 import time
-from multiprocessing import Pipe, freeze_support
+from multiprocessing import freeze_support
 from hyo2.abc.lib.testing import Testing
-from hyo2.kng.sis.lib.sis_process import SisProcess
+from hyo2.abc.lib.logging import set_logging
+from hyo2.kng.lib.sis import Sis
 
-logging.basicConfig(level=logging.DEBUG)
+set_logging(ns_list=['hyo2.kng'])
 logger = logging.getLogger(__name__)
 
 data_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 testing = Testing(root_folder=data_folder)
-test_files = testing.download_test_files(ext=".all")
+test_files = testing.download_test_files(ext=".kmall")
+
+ip_out = "localhost"
+port_out = 16103
+replay_ssm = True
+replay_mrz = False
 
 if __name__ == '__main__':
     freeze_support()
 
-    ip_out = "localhost"
-    port_out = 16103
-
     logger.debug("starting SIS process ...")
-    parent_conn, child_conn = Pipe()
-    p = SisProcess(conn=child_conn, ip_out=ip_out, port_out=port_out)
-    p.set_files(test_files)
-    p.start()
-
-    count = 0
-    while True:
-
-        if not p.is_alive():
-            break
-
-        if count == 10:
-            logger.debug("trigger termination")
-            p.stop()
-
-        count += 1
-        logger.debug(" ... %d ..." % count)
-        time.sleep(0.5)
-
-    logger.debug("SIS process is alive? %s" % p.is_alive())
-    logger.debug('%s.exitcode = %s' % (p.name, p.exitcode))  # <0: killed with signal; >0: exited with error
+    sis = Sis(ip_out=ip_out, port_out=port_out, use_sis5=True, replay_ssm=replay_ssm, replay_mrz=replay_mrz)
+    sis.verbose = True
+    sis.set_files(test_files)
+    sis.start()
+    time.sleep(10)
+    sis.stop()
+    logger.debug("SIS' SVP thread is alive? %s" % sis.t_svp.is_alive())
+    logger.debug("SIS' replay thread is alive? %s" % sis.t_replay.is_alive())
