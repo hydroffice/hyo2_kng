@@ -104,12 +104,12 @@ icon_file = os.path.normpath(os.path.join(os.getcwd(), 'freeze', 'sis_emu.ico'))
 if is_darwin:
     icon_file = os.path.normpath(os.path.join(os.getcwd(), 'freeze', 'sis_emu.icns'))
 
-a = Analysis(['sis_emu.py'],
+a = Analysis(['SISEmu.py'],
              pathex=[],
              hiddenimports=["PIL", "typing", "cftime._cftime", "pkg_resources"],
              excludes=["IPython", "PyQt4", "PyQt5", "PySide2", "pandas", "sphinx", "sphinx_rtd_theme",
                        "OpenGL_accelerate", "FixTk", "tcl", "tk", "_tkinter", "tkinter", "Tkinter",
-                       "wx"],
+                       "wx", "qgis"],
              hookspath=None,
              runtime_hooks=None)
 
