@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 name = "Kng"
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 __author__ = "gmasetti@ccom.unh.edu"
 
 pkg_info = PkgInfo(
@@ -24,6 +24,7 @@ pkg_info = PkgInfo(
     latest_url="https://www.hydroffice.org/latest/sis_emu.txt",
     deps_dict={
         "hyo2.abc2": "hyo2.abc2",
-        "PySide6": "PySide6"
+        "PySide6": "PySide6",
+        "numpy": "numpy"
     }
 )

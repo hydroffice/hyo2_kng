@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Union
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -57,7 +56,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.viewer.ensureCursorVisible()
         # create a monospace font
         font = QtGui.QFont("Courier New")
-        font.setStyleHint(QtGui.QFont.TypeWriter)
+        font.setStyleHint(QtGui.QFont.StyleHint.TypeWriter)
         font.setFixedPitch(True)
         font.setPointSize(9)
         self.viewer.document().setDefaultFont(font)
@@ -166,7 +165,7 @@ class ControlPanel(QtWidgets.QWidget):
         self.set_timing.setMaximum(5)
         self.set_timing.setTickInterval(1)
         self.set_timing.setValue(1)
-        self.set_timing.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        self.set_timing.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
         # noinspection PyUnresolvedReferences
         self.set_timing.valueChanged.connect(self.on_replay_timing)
         hbox.addWidget(self.set_timing)
@@ -304,7 +303,7 @@ class ControlPanel(QtWidgets.QWidget):
         logger.debug('adding files')
 
         settings = QtCore.QSettings()
-        source_folder = settings.value("source_folder", self.here)  # type: Union[object,str]
+        source_folder = settings.value("source_folder", self.here)  # type: object | str
 
         # ask the file path to the user
         if self.sis_4.isChecked():
@@ -338,7 +337,7 @@ class ControlPanel(QtWidgets.QWidget):
                 # noinspection PyCallByClass,PyArgumentList,PyTypeChecker
                 QtWidgets.QMessageBox.warning(self, "File Duplication",
                                               "Attempt to add a listed file:\n%s" % os.path.basename(f),
-                                              QtWidgets.QMessageBox.Ok)
+                                              QtWidgets.QMessageBox.StandardButton.Ok)
                 continue
             item = QtWidgets.QListWidgetItem(f)
             self.list_files.addItem(item)

@@ -51,7 +51,7 @@ setup(
     install_requires=[
         "hyo2.abc2",
         "numpy",
-        # "PySide6"
+        "PySide6"
     ],
     python_requires='>=3.8',
     entry_points={
@@ -77,6 +77,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         'Topic :: Scientific/Engineering :: GIS',
         'Topic :: Office/Business :: Office Suites',
     ],

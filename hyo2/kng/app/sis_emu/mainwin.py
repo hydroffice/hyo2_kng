@@ -72,22 +72,22 @@ class MainWin(QtWidgets.QMainWindow):
         except Exception as e:
             logger.warning(e)
 
-    def _do_you_really_want(self, title="Quit", text="quit"):
+    def _do_you_really_want(self, title="Quit", text="quit") -> int:
         """helper function that show to the user a message windows asking to confirm an action"""
         msg_box = QtWidgets.QMessageBox(self)
         msg_box.setWindowTitle(title)
         msg_box.setIconPixmap(QtGui.QPixmap(app_info.app_icon_path).scaled(QtCore.QSize(36, 36)))
         msg_box.setText('Do you really want to %s?' % text)
         # noinspection PyUnresolvedReferences
-        msg_box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-        msg_box.setDefaultButton(QtWidgets.QMessageBox.No)
+        msg_box.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
+        msg_box.setDefaultButton(QtWidgets.QMessageBox.StandardButton.No)
         return msg_box.exec()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """ actions to be done before close the app """
         reply = self._do_you_really_want("Quit", "quit %s" % self.name)
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
 
             event.accept()
             self.panel.stop_emulation()

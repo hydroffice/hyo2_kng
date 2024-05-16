@@ -2,7 +2,7 @@ import enum
 import logging
 import struct
 from datetime import datetime, timedelta
-from typing.io import BinaryIO
+from typing import BinaryIO
 
 logger = logging.getLogger(__name__)
 

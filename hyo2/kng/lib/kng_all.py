@@ -1,7 +1,7 @@
 import enum
 import logging
 import struct
-from typing.io import BinaryIO
+from typing import BinaryIO
 
 logger = logging.getLogger(__name__)
 
