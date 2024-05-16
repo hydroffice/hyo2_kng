@@ -6,20 +6,16 @@ KNG Library and Apps
 
 |
 
-.. image:: https://img.shields.io/badge/docs-latest-brightgreen.svg
-    :target: https://www.hydroffice.org/manuals/kng/index.html
-    :alt: Latest Documentation
+.. image:: https://github.com/hydroffice/hyo2_kng/actions/workflows/kng_on_windows.yml/badge.svg
+    :target: https://github.com/hydroffice/hyo2_kng/actions/workflows/kng_on_windows.yml
+    :alt: Windows
 
-.. image:: https://ci.appveyor.com/api/projects/status/dnf05qvap4ahdwjv?svg=true
-    :target: https://ci.appveyor.com/project/giumas/hyo2-kng
-    :alt: AppVeyor Status
+.. image:: https://github.com/hydroffice/hyo2_kng/actions/workflows/kng_on_linux.yml/badge.svg
+    :target: https://github.com/hydroffice/hyo2_kng/actions/workflows/kng_on_linux.yml
+    :alt: Linux
 
-.. image:: https://travis-ci.org/hydroffice/hyo2_kng.svg?branch=master
-     :target: https://travis-ci.org/hydroffice/hyo2_kng
-     :alt: Travis-CI Status
-
-.. image:: https://api.codacy.com/project/badge/Grade/be8fb86ea7664f009b0b71eed2683a20
-    :target: https://www.codacy.com/app/hydroffice/hyo2_kng/dashboard
+.. image:: https://api.codacy.com/project/badge/Grade/6b4e2d673cf54f1fa46c60ee5e17b1fb
+    :target: https://www.codacy.com/app/hydroffice/hyo2_kng/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
     :alt: Codacy
 
 .. image:: https://coveralls.io/repos/github/hydroffice/hyo2_kng/badge.svg?branch=master
