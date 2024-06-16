@@ -100,9 +100,9 @@ pyproj_data = collect_folder_data(input_data_folder=share_folder, relative_outpu
 abc2_data = collect_pkg_data('hyo2.abc2')
 kng_data = collect_pkg_data('hyo2.kng')
 
-icon_file = os.path.normpath(os.path.join(os.getcwd(), 'freeze', 'sis_emu.ico'))
+icon_file = os.path.normpath(os.path.join(os.getcwd(), 'freeze', 'SISEmu.ico'))
 if is_darwin:
-    icon_file = os.path.normpath(os.path.join(os.getcwd(), 'freeze', 'sis_emu.icns'))
+    icon_file = os.path.normpath(os.path.join(os.getcwd(), 'freeze', 'SISEmu.icns'))
 
 a = Analysis(['SISEmu.py'],
              pathex=[],
